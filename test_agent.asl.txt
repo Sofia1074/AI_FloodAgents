@@ -1,0 +1,9 @@
+// Crença inicial
+alerta(cheia, nivel_alto).
+
+// Objetivo inicial
+!iniciar.
+
+// Plano executado ao arrancar
++!iniciar <-
+    .print("Agente BDI ativo e a monitorizar cheias.").

@@ -6,6 +6,7 @@ from spade.agent import Agent
 from spade.behaviour import CyclicBehaviour, PeriodicBehaviour
 from spade.message import Message
 
+import registo
 from config import (CAPACIDADE_TANQUE, EFEITO_RECURSO, FATOR_CHEIA,
                     LIMITES_RISCO, PASSWORD, PERIODO_MEDICAO, jid)
 from rede import REDE
@@ -32,8 +33,8 @@ class NeighbourhoodOperator(Agent):
             op.medir()
             op.avaliar_risco()
 
-            # só alerta se o risco não for baixo ou se mudou desde o último alerta
-            if op.risco == "baixo" and op.risco == op.ultimo_risco_enviado:
+            # só alerta quando há novidade: o risco mudou desde o último alerta
+            if op.risco == op.ultimo_risco_enviado:
                 return
             lider = f"lider{op.bairro}"
             if not op.rede.pode_comunicar(op.nome, lider):
@@ -44,9 +45,15 @@ class NeighbourhoodOperator(Agent):
             msg.set_metadata("performative", "inform")
             msg.body = json.dumps(alerta)
             await self.send(msg)
+            anterior = op.ultimo_risco_enviado
             op.ultimo_risco_enviado = op.risco
-            print(f"[{op.nome}] alerta enviado: risco {op.risco} "
-                  f"(nível {op.nivel_agua:.1f})", flush=True)
+            if anterior is None and op.risco == "baixo":
+                registo.detalhe(op.nome, "primeira leitura: risco baixo")
+            else:
+                registo.evento(
+                    "ALERTA",
+                    f"bairro {op.bairro}: {anterior or 'baixo'} -> {op.risco} "
+                    f"(nível {op.nivel_agua:.1f})")
 
     class OuvirMensagens(CyclicBehaviour):
         """Recebe: pedidos de recursos do líder e avisos de descarga da barragem."""
@@ -61,18 +68,23 @@ class NeighbourhoodOperator(Agent):
             performative = msg.get_metadata("performative")
 
             if origem.startswith("lider") and performative == "request":
+                antes = op.nivel_agua
                 op.ativar_mitigacao(conteudo["recursos"])
-                print(f"[{op.nome}] mitigação ativada {conteudo['recursos']} "
-                      f"-> nível {op.nivel_agua:.1f}", flush=True)
+                registo.evento(
+                    "MITIGAÇÃO",
+                    f"bairro {op.bairro}: {conteudo['recursos']} -> nível "
+                    f"{antes:.1f} -> {op.nivel_agua:.1f}")
             elif origem == "barragem" and performative == "inform":
                 # a água libertada pela barragem chega ao bairro
+                antes = op.nivel_agua
                 op.nivel_agua = min(CAPACIDADE_TANQUE,
                                     op.nivel_agua + conteudo["caudal"] * FATOR_CHEIA)
-                print(f"[{op.nome}] descarga a chegar (caudal {conteudo['caudal']}) "
-                      f"-> nível {op.nivel_agua:.1f}", flush=True)
+                registo.detalhe(op.nome, f"descarga a chegar (caudal "
+                                f"{conteudo['caudal']}): nível {antes:.1f} -> "
+                                f"{op.nivel_agua:.1f}")
 
     async def setup(self):
-        print(f"[{self.nome}] agente ativo (bairro {self.bairro})", flush=True)
+        registo.detalhe(self.nome, f"agente ativo (bairro {self.bairro})")
         self.add_behaviour(self.Monitorizar(period=PERIODO_MEDICAO))
         self.add_behaviour(self.OuvirMensagens())
 

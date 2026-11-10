@@ -6,6 +6,7 @@ from spade.agent import Agent
 from spade.behaviour import CyclicBehaviour
 from spade.message import Message
 
+import registo
 from config import CAUDAL_ACEITE, PASSWORD, RECURSOS_POR_RISCO, jid
 from rede import REDE
 
@@ -42,8 +43,8 @@ class CommunityLeader(Agent):
                     pedido.set_metadata("performative", "request")
                     pedido.body = json.dumps({"recursos": pedidos})
                     await self.send(pedido)
-                    print(f"[{lider.nome}] risco {lider.risco_do_bairro}: "
-                          f"pediu recursos {pedidos}", flush=True)
+                    registo.detalhe(lider.nome, f"risco {lider.risco_do_bairro}: "
+                                    f"pediu recursos {pedidos}")
 
             elif origem == "barragem" and performative == "propose":
                 # proposta da barragem -> vota (e, se recusar, contrapropõe)
@@ -56,11 +57,14 @@ class CommunityLeader(Agent):
                     "accept-proposal" if resposta["aceita"] else "reject-proposal")
                 voto.body = json.dumps(resposta)
                 await self.send(voto)
-                print(f"[{lider.nome}] {'aceitou' if resposta['aceita'] else 'recusou'} "
-                      f"o plano (risco {lider.risco_do_bairro})", flush=True)
+                registo.detalhe(
+                    lider.nome,
+                    f"{'aceitou' if resposta['aceita'] else 'recusou'} o plano "
+                    f"(risco {lider.risco_do_bairro}); contraproposta "
+                    f"{resposta['contraproposta']}")
 
     async def setup(self):
-        print(f"[{self.nome}] agente ativo (bairro {self.bairro})", flush=True)
+        registo.detalhe(self.nome, f"agente ativo (bairro {self.bairro})")
         self.add_behaviour(self.OuvirMensagens())
 
     def receber_alerta(self, alerta):

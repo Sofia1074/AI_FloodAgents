@@ -1,13 +1,16 @@
 """Agente 1 — Operador da Barragem (existe um só)."""
 
 import json
+from datetime import datetime, timedelta
 
 from spade.agent import Agent
 from spade.behaviour import PeriodicBehaviour
 from spade.message import Message
 
-from config import (CAPACIDADE_RESERVATORIO, NIVEL_ALERTA_RESERVATORIO,
-                    PASSWORD, PERIODO_MONITORIZACAO, TEMPO_ESPERA_VOTOS, jid)
+import registo
+from config import (CAPACIDADE_RESERVATORIO, ESPERA_INICIAL,
+                    NIVEL_ALERTA_RESERVATORIO, PASSWORD,
+                    PERIODO_MONITORIZACAO, TEMPO_ESPERA_VOTOS, jid)
 from rede import REDE
 
 
@@ -21,6 +24,8 @@ class DamOperator(Agent):
         self.nivel_reservatorio = 0.0    # % de enchimento do reservatório
         self.caudal_descarga = 0.0       # caudal que está a ser libertado
         self.caudal_maximo_seguro = 80.0 # limite operacional das comportas
+        self.descargas = 0               # descargas executadas (para o resumo final)
+        self.rejeitados = 0              # planos rejeitados pelos líderes
 
     class Monitorizar(PeriodicBehaviour):
         """De tempos a tempos: avalia o reservatório e, se for preciso,
@@ -43,7 +48,7 @@ class DamOperator(Agent):
                 msg.set_metadata("performative", "propose")
                 msg.body = json.dumps(plano)
                 await self.send(msg)
-            print(f"[{dam.nome}] plano proposto: {plano}", flush=True)
+            registo.detalhe(dam.nome, f"plano proposto: {plano}")
 
             # 2) recolher os votos (quem não responde a tempo conta como "não")
             votos = {}
@@ -53,13 +58,28 @@ class DamOperator(Agent):
                     break
                 aceitou = resposta.get_metadata("performative") == "accept-proposal"
                 votos[resposta.sender.user] = aceitou
-            print(f"[{dam.nome}] votos: {votos}", flush=True)
+
+            favoraveis = sum(votos.values())
+            aprovado = favoraveis > len(lideres) / 2
+            por_bairro = " ".join(
+                f"{l[-1]}:" + ("sem resposta" if l.lower() not in votos else
+                               "sim" if votos[l.lower()] else "não")
+                for l in lideres)
+            registo.evento(
+                "VOTAÇÃO",
+                f"caudal {plano['caudal']} (atraso {plano['atraso']}, duração "
+                f"{plano['duracao']}) | {por_bairro} | {favoraveis}/{len(lideres)} -> "
+                + ("aprovado" if aprovado else "rejeitado, nada foi executado"))
 
             # 3) maioria aprova -> executa e informa os operadores de bairro
-            if sum(votos.values()) > len(lideres) / 2:
+            if aprovado:
+                antes = dam.nivel_reservatorio
                 dam.executar_descarga(plano)
-                print(f"[{dam.nome}] descarga executada, reservatório a "
-                      f"{dam.nivel_reservatorio:.1f}%", flush=True)
+                dam.descargas += 1
+                registo.evento(
+                    "DESCARGA",
+                    f"caudal {plano['caudal']}: reservatório "
+                    f"{antes:.1f}% -> {dam.nivel_reservatorio:.1f}%")
                 for b in "ABC":
                     if dam.rede.pode_comunicar(dam.nome, f"op{b}"):
                         info = Message(to=jid(f"op{b}"))
@@ -67,11 +87,13 @@ class DamOperator(Agent):
                         info.body = json.dumps(plano)
                         await self.send(info)
             else:
-                print(f"[{dam.nome}] plano rejeitado, nada foi executado", flush=True)
+                dam.rejeitados += 1
 
     async def setup(self):
-        print(f"[{self.nome}] agente ativo", flush=True)
-        self.add_behaviour(self.Monitorizar(period=PERIODO_MONITORIZACAO))
+        registo.detalhe(self.nome, "agente ativo")
+        arranque = datetime.now() + timedelta(seconds=ESPERA_INICIAL)
+        self.add_behaviour(self.Monitorizar(period=PERIODO_MONITORIZACAO,
+                                            start_at=arranque))
 
     def avaliar_descarga(self):
         """Decide se é preciso fazer uma descarga.

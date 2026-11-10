@@ -4,7 +4,8 @@ Trabalho académico (3.º ano). Comunicar com o utilizador em **português**.
 
 ## Estado do código (resumo)
 
-- Executar com **Python 3.12** (é o único com SPADE instalado): `py -3.12 main.py`
+- Executar com **Python 3.12** (é o único com SPADE instalado): `py -3.12 main.py` (saída resumida) ou `py -3.12 main.py -v` (mostra cada mensagem).
+- `registo.py`: saída do terminal. `evento()` mostra sempre (ALERTA, MITIGAÇÃO, VOTAÇÃO, DESCARGA, com o tempo `[t=..s]`); `detalhe()` só com `-v`. Usar estas funções em vez de `print` nos agentes. Os operadores só alertam quando o risco **muda**.
 - `config.py`: constantes e `jid()`. `rede.py`: matriz de adjacências (`REDE`).
 - `agentes/`: `barragem.py` (DamOperator), `operador.py` (NeighbourhoodOperator), `lider.py` (CommunityLeader).
 - `cenarios.py`: só dados (estado inicial). Por agora só existe o cenário "calmo"; faltam os cenários descritos na secção 14 do contexto abaixo.
@@ -12,6 +13,16 @@ Trabalho académico (3.º ano). Comunicar com o utilizador em **português**.
 - `sistema_spade.py` e `Flood/` são versões alternativas/antigas; `sistema_spade.py` importa de um `classes.py` que já não existe.
 - Bugs conhecidos por corrigir: corrida no arranque (operadores alertam antes de os líderes arrancarem), a barragem pode contar mensagens que não são votos, contrapropostas dos líderes nunca usadas, `json.loads` sem tratamento de erros.
 - Nota: o documento original numera os cenários a partir do 2 (não existe "Cenário 1"; presumivelmente seria o cenário base/calmo).
+
+## Matéria das aulas (referência obrigatória)
+
+O trabalho deve refletir a matéria de ISIA. Resumo e ligação ao projeto em
+`docs/materia.md`; texto completo dos slides em `docs/aulas/` (ISIA_2 Agentes
+Inteligentes, ISIA_3 Sistemas Multiagente/FIPA/ContractNet, ISIA_5 Escolha
+Social/votação, ISIA_6 Desenho de Mecanismos/leilões/VCG). Ao mudar o código,
+justificar as escolhas com estes conceitos (BDI/tipos de agente, FIPA-ACL e
+ContractNet, método de votação, afetação de recursos escassos) e manter a saída
+do terminal curta e orientada a eventos (ver `docs/materia.md`).
 
 ---
 

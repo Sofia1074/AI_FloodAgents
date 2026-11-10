@@ -13,6 +13,8 @@ NIVEL_ALERTA_RESERVATORIO = 80.0   # % a partir da qual é preciso descarregar
 CAPACIDADE_RESERVATORIO = 10000.0  # volume que corresponde a 100% de enchimento
 PERIODO_MONITORIZACAO = 10         # segundos entre verificações do reservatório
 TEMPO_ESPERA_VOTOS = 3             # segundos à espera da resposta dos líderes
+ESPERA_INICIAL = 8                 # segundos até a barragem fazer a 1.ª verificação
+                                   # (dá tempo aos alertas dos bairros chegarem aos líderes)
 
 # Parâmetros dos bairros
 PERIODO_MEDICAO = 5                # segundos entre medições do operador de bairro

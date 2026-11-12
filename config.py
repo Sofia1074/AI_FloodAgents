@@ -19,11 +19,31 @@ ESPERA_INICIAL = 8                 # segundos até a barragem fazer a 1.ª verif
 # Parâmetros dos bairros
 PERIODO_MEDICAO = 5                # segundos entre medições do operador de bairro
 CAPACIDADE_TANQUE = 100.0          # nível de água que o bairro consegue reter
-FATOR_CHEIA = 1.0                  # quanto o nível sobe por cada unidade de caudal libertado
 # nível de água (%) até ao qual cada risco se aplica; acima de 75 é "crítico"
 LIMITES_RISCO = [(25.0, "baixo"), (50.0, "moderado"), (75.0, "elevado")]
-# efeito de cada recurso a reduzir o nível de água do bairro
-EFEITO_RECURSO = {"bombas": 5.0, "barreiras": 3.0, "equipas": 2.0}
+LIMIAR_SUBIDA_RAPIDA = 4.0         # subida por ciclo a partir da qual é "rápida"
+AGRAVAMENTO_MAXIMO = 1             # classes que os agravantes podem somar ao nível
+NIVEL_MINIMO_DRENAGEM = 15.0       # abaixo disto a drenagem fraca não agrava o risco
+# efeito de cada recurso no ambiente, por unidade e durante alguns ciclos:
+#   drenagem -> água extra escoada por ciclo
+#   protecao -> fração da água da descarga que deixa de entrar no bairro
+EFEITO_RECURSO = {
+    "bombas":      {"drenagem": 2.0, "protecao": 0.0, "ciclos": 6},
+    "equipas":     {"drenagem": 1.0, "protecao": 0.0, "ciclos": 10},
+    "barreiras":   {"drenagem": 0.0, "protecao": 0.5, "ciclos": 8},
+    "sacos_areia": {"drenagem": 0.0, "protecao": 0.3, "ciclos": 10},
+}
+PROTECAO_MAXIMA = 0.9              # as barreiras nunca bloqueiam toda a água
+
+# Parâmetros do ambiente (ambiente.py). Modelo aproximado, ver limitações lá.
+PERIODO_CICLO = 2                  # segundos entre dois passos do ambiente
+CAUDAL_BASE_ENTRADA = 20.0         # caudal que entra no reservatório sem chuva
+AREA_BACIA = 10.0                  # caudal de entrada extra por mm de chuva
+NIVEL_JUSANTE_BASE = 1.0           # nível do rio a jusante sem descarga (m)
+FATOR_JUSANTE = 0.02               # metros a mais a jusante por unidade de caudal
+HUMIDADE_POR_MM = 0.02             # quanto a humidade do solo sobe por mm de chuva
+SECAGEM_SOLO = 0.02                # quanto a humidade desce por ciclo
+PERDA_DRENAGEM_SOLO = 0.5          # com o solo encharcado a drenagem cai até metade
 # recursos que o líder pede, conforme o risco do bairro
 RECURSOS_POR_RISCO = {
     "baixo": {},

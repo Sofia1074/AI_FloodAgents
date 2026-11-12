@@ -8,8 +8,7 @@ from spade.behaviour import PeriodicBehaviour
 from spade.message import Message
 
 import registo
-from config import (CAPACIDADE_RESERVATORIO, ESPERA_INICIAL,
-                    NIVEL_ALERTA_RESERVATORIO, PASSWORD,
+from config import (ESPERA_INICIAL, NIVEL_ALERTA_RESERVATORIO, PASSWORD,
                     PERIODO_MONITORIZACAO, TEMPO_ESPERA_VOTOS, jid)
 from rede import REDE
 
@@ -17,12 +16,11 @@ from rede import REDE
 class DamOperator(Agent):
     """Agente 1 — Operador da Barragem (existe um só)."""
 
-    def __init__(self, nome, password=PASSWORD):
+    def __init__(self, nome, ambiente, password=PASSWORD):
         super().__init__(jid(nome), password)
         self.nome = nome
         self.rede = REDE                 # quem comunica com quem
-        self.nivel_reservatorio = 0.0    # % de enchimento do reservatório
-        self.caudal_descarga = 0.0       # caudal que está a ser libertado
+        self.ambiente = ambiente         # mundo simulado (ambiente.py)
         self.caudal_maximo_seguro = 80.0 # limite operacional das comportas
         self.descargas = 0               # descargas executadas (para o resumo final)
         self.rejeitados = 0              # planos rejeitados pelos líderes
@@ -73,13 +71,12 @@ class DamOperator(Agent):
 
             # 3) maioria aprova -> executa e informa os operadores de bairro
             if aprovado:
-                antes = dam.nivel_reservatorio
                 dam.executar_descarga(plano)
                 dam.descargas += 1
                 registo.evento(
                     "DESCARGA",
-                    f"caudal {plano['caudal']}: reservatório "
-                    f"{antes:.1f}% -> {dam.nivel_reservatorio:.1f}%")
+                    f"caudal {plano['caudal']} durante {plano['duracao']} ciclos "
+                    f"(reservatório a {dam.nivel_reservatorio:.1f}%)")
                 for b in "ABC":
                     if dam.rede.pode_comunicar(dam.nome, f"op{b}"):
                         info = Message(to=jid(f"op{b}"))
@@ -95,10 +92,22 @@ class DamOperator(Agent):
         self.add_behaviour(self.Monitorizar(period=PERIODO_MONITORIZACAO,
                                             start_at=arranque))
 
+    @property
+    def nivel_reservatorio(self):
+        """% de enchimento do reservatório, lido do ambiente."""
+        return self.ambiente.nivel_reservatorio
+
+    @property
+    def caudal_descarga(self):
+        """Caudal que está a ser libertado agora."""
+        return self.ambiente.caudal_saida
+
     def avaliar_descarga(self):
         """Decide se é preciso fazer uma descarga.
-        Há descarga quando o reservatório passa o nível de alerta."""
-        return self.nivel_reservatorio > NIVEL_ALERTA_RESERVATORIO
+        Há descarga quando o reservatório passa o nível de alerta e não há
+        já uma descarga marcada ou a decorrer."""
+        return (self.nivel_reservatorio > NIVEL_ALERTA_RESERVATORIO
+                and not self.ambiente.descarga_ativa())
 
     def propor_plano(self):
         """Cria um plano de descarga (caudal, atraso, duração).
@@ -129,9 +138,7 @@ class DamOperator(Agent):
 
     def executar_descarga(self, plano):
         """Abre as comportas segundo um plano já validado.
-        Regista o caudal e baixa o nível do reservatório pelo volume
-        libertado (caudal x duração)."""
-        self.caudal_descarga = plano["caudal"]
-        volume = plano["caudal"] * plano["duracao"]
-        self.nivel_reservatorio = max(
-            0.0, self.nivel_reservatorio - 100.0 * volume / CAPACIDADE_RESERVATORIO)
+        O ambiente liberta o caudal durante os ciclos do plano; o nível do
+        reservatório desce aos poucos."""
+        self.ambiente.iniciar_descarga(plano["caudal"], plano["duracao"],
+                                       plano["atraso"])

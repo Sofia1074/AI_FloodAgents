@@ -7,23 +7,25 @@ from spade.behaviour import CyclicBehaviour, PeriodicBehaviour
 from spade.message import Message
 
 import registo
-from config import (CAPACIDADE_TANQUE, EFEITO_RECURSO, FATOR_CHEIA,
-                    LIMITES_RISCO, PASSWORD, PERIODO_MEDICAO, jid)
+from config import CAPACIDADE_TANQUE, PASSWORD, PERIODO_MEDICAO, jid
 from rede import REDE
+from risco import classificar_risco
 
 
 class NeighbourhoodOperator(Agent):
     """Agentes 2A, 2B, 2C — Operador de um bairro."""
 
-    def __init__(self, nome, bairro, password=PASSWORD):
+    def __init__(self, nome, bairro, ambiente, password=PASSWORD):
         super().__init__(jid(nome), password)
         self.nome = nome
         self.rede = REDE                 # quem comunica com quem
         self.bairro = bairro             # "A", "B" ou "C"
-        self.nivel_agua = 0.0            # nível da água no bairro
+        self.ambiente = ambiente         # mundo simulado (ambiente.py)
         self.tanque_livre = CAPACIDADE_TANQUE   # capacidade de retenção disponível
         self.risco = "baixo"             # baixo, moderado, elevado ou crítico
+        self.motivos = []                # agravantes do risco (ver risco.py)
         self.ultimo_risco_enviado = None # para só alertar quando há novidade
+        self.subida_rapida_avisada = False
 
     class Monitorizar(PeriodicBehaviour):
         """De tempos a tempos: mede, avalia o risco e alerta o líder."""
@@ -33,8 +35,12 @@ class NeighbourhoodOperator(Agent):
             op.medir()
             op.avaliar_risco()
 
-            # só alerta quando há novidade: o risco mudou desde o último alerta
-            if op.risco == op.ultimo_risco_enviado:
+            # só alerta quando há novidade: o risco mudou desde o último
+            # alerta, ou começou uma subida rápida (secção 3 do guia)
+            subida_rapida = "subida rápida" in op.motivos
+            nova_subida = subida_rapida and not op.subida_rapida_avisada
+            op.subida_rapida_avisada = subida_rapida
+            if op.risco == op.ultimo_risco_enviado and not nova_subida:
                 return
             lider = f"lider{op.bairro}"
             if not op.rede.pode_comunicar(op.nome, lider):
@@ -47,13 +53,19 @@ class NeighbourhoodOperator(Agent):
             await self.send(msg)
             anterior = op.ultimo_risco_enviado
             op.ultimo_risco_enviado = op.risco
-            if anterior is None and op.risco == "baixo":
+            motivos = f", {', '.join(op.motivos)}" if op.motivos else ""
+            dados = (f"(nível {op.nivel_agua:.1f}, a subir "
+                     f"{op.velocidade_subida:+.1f}/ciclo{motivos})")
+            if anterior is None and op.risco == "baixo" and not op.motivos:
                 registo.detalhe(op.nome, "primeira leitura: risco baixo")
+            elif anterior is None:
+                registo.evento("ALERTA", f"bairro {op.bairro}: risco {op.risco} {dados}")
+            elif anterior == op.risco:
+                registo.evento("ALERTA", f"bairro {op.bairro}: subida rápida, risco "
+                                         f"continua {op.risco} {dados}")
             else:
-                registo.evento(
-                    "ALERTA",
-                    f"bairro {op.bairro}: {anterior or 'baixo'} -> {op.risco} "
-                    f"(nível {op.nivel_agua:.1f})")
+                registo.evento("ALERTA", f"bairro {op.bairro}: {anterior} -> "
+                                         f"{op.risco} {dados}")
 
     class OuvirMensagens(CyclicBehaviour):
         """Recebe: pedidos de recursos do líder e avisos de descarga da barragem."""
@@ -68,40 +80,49 @@ class NeighbourhoodOperator(Agent):
             performative = msg.get_metadata("performative")
 
             if origem.startswith("lider") and performative == "request":
-                antes = op.nivel_agua
                 op.ativar_mitigacao(conteudo["recursos"])
                 registo.evento(
                     "MITIGAÇÃO",
-                    f"bairro {op.bairro}: {conteudo['recursos']} -> nível "
-                    f"{antes:.1f} -> {op.nivel_agua:.1f}")
+                    f"bairro {op.bairro}: {conteudo['recursos']} ativados "
+                    f"(nível {op.nivel_agua:.1f})")
             elif origem == "barragem" and performative == "inform":
-                # a água libertada pela barragem chega ao bairro
-                antes = op.nivel_agua
-                op.nivel_agua = min(CAPACIDADE_TANQUE,
-                                    op.nivel_agua + conteudo["caudal"] * FATOR_CHEIA)
-                registo.detalhe(op.nome, f"descarga a chegar (caudal "
-                                f"{conteudo['caudal']}): nível {antes:.1f} -> "
-                                f"{op.nivel_agua:.1f}")
+                # só um aviso: a água da descarga chega pelo ambiente
+                registo.detalhe(op.nome, f"aviso de descarga (caudal "
+                                f"{conteudo['caudal']}, duração {conteudo['duracao']})")
 
     async def setup(self):
         registo.detalhe(self.nome, f"agente ativo (bairro {self.bairro})")
         self.add_behaviour(self.Monitorizar(period=PERIODO_MEDICAO))
         self.add_behaviour(self.OuvirMensagens())
 
+    @property
+    def nivel_agua(self):
+        """Nível de água do bairro, lido do ambiente (sensor simulado)."""
+        return self.ambiente.bairros[self.bairro].nivel
+
+    @property
+    def velocidade_subida(self):
+        """Quanto o nível subiu no último ciclo do ambiente."""
+        return self.ambiente.bairros[self.bairro].velocidade
+
     def medir(self):
         """Lê os sensores do bairro.
-        O nível de água é atualizado de fora (avisos da barragem, mitigação);
-        aqui calcula-se o que se deduz dele: a capacidade de retenção livre."""
+        O nível de água vem do ambiente; aqui calcula-se o que se deduz
+        dele: a capacidade de retenção livre."""
         self.tanque_livre = max(0.0, CAPACIDADE_TANQUE - self.nivel_agua)
         return self.nivel_agua, self.tanque_livre
 
     def avaliar_risco(self):
-        """Calcula o nível de risco a partir das medições."""
-        self.risco = "crítico"
-        for limite, risco in LIMITES_RISCO:
-            if self.nivel_agua < limite:
-                self.risco = risco
-                break
+        """Calcula o nível de risco a partir das medições: nível, velocidade
+        de subida, chuva e capacidade de drenagem (regras em risco.py).
+        Guarda os agravantes em `self.motivos`."""
+        b = self.ambiente.bairros[self.bairro]
+        self.risco, self.motivos = classificar_risco(
+            nivel=b.nivel,
+            velocidade=b.velocidade,
+            entrada_chuva=b.entrada_chuva(self.ambiente.chuva_ultimo_ciclo),
+            drenagem=b.drenagem_natural(),
+        )
         return self.risco
 
     def alertar_lider(self):
@@ -111,13 +132,13 @@ class NeighbourhoodOperator(Agent):
             "bairro": self.bairro,
             "risco": self.risco,
             "nivel_agua": self.nivel_agua,
+            "velocidade_subida": self.velocidade_subida,
+            "motivos": self.motivos,
             "tanque_livre": self.tanque_livre,
         }
 
     def ativar_mitigacao(self, recursos):
         """Liga bombas, barreiras ou equipas no bairro.
-        Cada recurso baixa o nível de água conforme o seu efeito."""
-        reducao = sum(EFEITO_RECURSO.get(nome, 0.0) * qtd
-                      for nome, qtd in recursos.items())
-        self.nivel_agua = max(0.0, self.nivel_agua - reducao)
-        self.medir()
+        O efeito acontece no ambiente ao longo dos ciclos seguintes
+        (ver EFEITO_RECURSO em config.py)."""
+        self.ambiente.aplicar_mitigacao(self.bairro, recursos)

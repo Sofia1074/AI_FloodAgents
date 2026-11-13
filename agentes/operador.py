@@ -6,6 +6,7 @@ from spade.agent import Agent
 from spade.behaviour import CyclicBehaviour, PeriodicBehaviour
 from spade.message import Message
 
+import metricas
 import registo
 from config import CAPACIDADE_TANQUE, PASSWORD, PERIODO_MEDICAO, jid
 from rede import REDE
@@ -53,6 +54,7 @@ class NeighbourhoodOperator(Agent):
             await self.send(msg)
             anterior = op.ultimo_risco_enviado
             op.ultimo_risco_enviado = op.risco
+            metricas.alerta(op.bairro, op.risco)
             motivos = f", {', '.join(op.motivos)}" if op.motivos else ""
             dados = (f"(nível {op.nivel_agua:.1f}, a subir "
                      f"{op.velocidade_subida:+.1f}/ciclo{motivos})")
@@ -81,6 +83,7 @@ class NeighbourhoodOperator(Agent):
 
             if origem.startswith("lider") and performative == "request":
                 op.ativar_mitigacao(conteudo["recursos"])
+                metricas.mitigacao(op.bairro, conteudo["recursos"])
                 registo.evento(
                     "MITIGAÇÃO",
                     f"bairro {op.bairro}: {conteudo['recursos']} ativados "

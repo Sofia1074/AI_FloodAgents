@@ -8,13 +8,18 @@ Correr com um Python que tenha o SPADE instalado:
 
 Cenários: risco_elevado, conflito, recursos_limitados (os três do guia),
 calmo e cheia (testes).
+
+No fim grava as métricas em resultados/<cenário>/ (ciclos.csv, eventos.csv,
+resumo.json). Os gráficos fazem-se depois com graficos.py.
 """
 
 import asyncio
+import os
 import sys
 
 import spade
 
+import metricas
 import registo
 from agentes import CommunityLeader, DamOperator, NeighbourhoodOperator
 from ambiente import Ambiente
@@ -41,12 +46,31 @@ async def simular(ambiente):
             registo.evento("CHUVA", f"{chuva:.0f} mm por ciclo" if chuva else "parou")
             chuva_anterior = chuva
         ambiente.passo()
+        metricas.registar_ciclo()
         registo.detalhe("ambiente", ambiente.resumo())
+
+
+def mostrar_metricas(r):
+    """Escreve no terminal as métricas principais, em poucas linhas."""
+    det = " ".join(f"{b}:{'-' if c is None else f'{c} ciclos'}"
+                   for b, c in r["tempo_deteccao_ciclos"].items())
+    p = r["propostas"]
+    tempos = r["tempo_ate_decisao_s"]
+    decisao = f"{1000 * sum(tempos) / len(tempos):.0f} ms" if tempos else "-"
+    print(f"Métricas: mensagens {r['mensagens']['total']} | deteção {det} | "
+          f"decisão média {decisao}", flush=True)
+    print(f"          propostas {p['total']} (aprovadas {p['aprovadas']}, rejeitadas "
+          f"na votação {p['rejeitadas_votacao']}, por segurança "
+          f"{p['rejeitadas_seguranca']}) | recursos {r['recursos']['total'] or '-'} | "
+          f"transações {r['transacoes']['total']}", flush=True)
 
 
 async def main(nome_cenario, verboso):
     registo.iniciar(verboso)
     ambiente = Ambiente(CENARIOS[nome_cenario])
+    recolha = metricas.iniciar(nome_cenario, ambiente)
+    metricas.registar_ciclo()            # estado inicial (ciclo 0)
+    metricas.instalar_contador_mensagens()
     barragem = DamOperator("barragem", ambiente)
     operadores = [NeighbourhoodOperator(f"op{b}", b, ambiente) for b in "ABC"]
     lideres = [CommunityLeader(f"lider{b}", b) for b in "ABC"]
@@ -73,6 +97,11 @@ async def main(nome_cenario, verboso):
     print(f"Estado final: {estado(barragem, operadores)}", flush=True)
     print(f"Ciclos do ambiente: {ambiente.ciclo} | descargas executadas: "
           f"{barragem.descargas} | planos rejeitados: {barragem.rejeitados}", flush=True)
+    pasta = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                         "resultados", nome_cenario)
+    recolha.exportar(pasta)
+    mostrar_metricas(recolha.resumo())
+    print(f"Métricas gravadas em resultados/{nome_cenario}/", flush=True)
 
 
 def ler_argumentos(argv):

@@ -7,6 +7,7 @@ from spade.agent import Agent
 from spade.behaviour import PeriodicBehaviour
 from spade.message import Message
 
+import metricas
 import registo
 from config import (ESPERA_INICIAL, NIVEL_ALERTA_RESERVATORIO, PASSWORD,
                     PERIODO_MONITORIZACAO, TEMPO_ESPERA_VOTOS, jid)
@@ -36,6 +37,8 @@ class DamOperator(Agent):
 
             plano = dam.propor_plano()
             if not dam.validar_plano(plano):
+                if plano is not None:
+                    metricas.rejeitada_seguranca(f"plano fora dos limites: {plano}")
                 return
 
             # 1) propor o plano aos líderes com quem a rede permite falar
@@ -47,6 +50,7 @@ class DamOperator(Agent):
                 msg.body = json.dumps(plano)
                 await self.send(msg)
             registo.detalhe(dam.nome, f"plano proposto: {plano}")
+            metricas.proposta(plano["caudal"])
 
             # 2) recolher os votos (quem não responde a tempo conta como "não")
             votos = {}
@@ -59,6 +63,7 @@ class DamOperator(Agent):
 
             favoraveis = sum(votos.values())
             aprovado = favoraveis > len(lideres) / 2
+            metricas.decisao(aprovado, favoraveis, len(lideres))
             por_bairro = " ".join(
                 f"{l[-1]}:" + ("sem resposta" if l.lower() not in votos else
                                "sim" if votos[l.lower()] else "não")
@@ -73,6 +78,7 @@ class DamOperator(Agent):
             if aprovado:
                 dam.executar_descarga(plano)
                 dam.descargas += 1
+                metricas.descarga(plano["caudal"], plano["duracao"])
                 registo.evento(
                     "DESCARGA",
                     f"caudal {plano['caudal']} durante {plano['duracao']} ciclos "

@@ -60,3 +60,13 @@ recurso(critico, equipas, 1).
 
 +proposta(Id, Caudal) : risco(R) & caudal_aceite(R, Limite) & Caudal > Limite & Limite == 0 <-
     .responder(Id, rejeita, 0).
+
+// --- Votação da proposta final: só sim ou não ----------------------------
+// Na votação não se negoceia, por isso não há contraproposta. Vota sim se o
+// caudal cabe no que o risco do bairro permite, e não se não cabe.
+
++votacao(Id, Caudal) : risco(R) & caudal_aceite(R, Limite) & Caudal <= Limite <-
+    .votar(Id, sim).
+
++votacao(Id, Caudal) : risco(R) & caudal_aceite(R, Limite) & Caudal > Limite <-
+    .votar(Id, nao).

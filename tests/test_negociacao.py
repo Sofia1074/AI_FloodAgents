@@ -14,6 +14,8 @@ try:
                                   em_ciclos, ha_maioria, reformular,
                                   resumo_respostas)
     from config import PERIODO_CICLO
+    from spade.template import Template
+    import mensagens
     TEM_SPADE = True
 except Exception:      # spade indisponível
     TEM_SPADE = False
@@ -81,6 +83,27 @@ class TestResumoENegociacao(unittest.TestCase):
 
     def test_duracao_em_ciclos_e_segundos(self):
         self.assertEqual(em_ciclos(10), f"10 ciclos ({10 * PERIODO_CICLO} s)")
+
+    def test_votacao_so_recebe_votos_da_sua_negociacao(self):
+        class Ambiente:
+            pass
+        dam = DamOperator("barragem", Ambiente())
+        dam.negociacao = Negociacao(thread="desc-001", plano=PLANO, lideres=["lidera"])
+        _, template = dam.criar_votacao()
+        voto = mensagens.criar("barragem", "accept-proposal", "votacao", "voto",
+                               thread="desc-001")
+        outra_negociacao = mensagens.criar("barragem", "accept-proposal", "votacao",
+                                           "voto", thread="desc-002")
+        resposta = mensagens.criar("barragem", "accept-proposal", "negociar-descarga",
+                                   "resposta_proposta", thread="desc-001")
+        self.assertTrue(template.match(voto))
+        self.assertFalse(template.match(outra_negociacao))
+        self.assertFalse(template.match(resposta))   # é do FSM, não da votação
+
+    def test_complemento_do_template_vazio_nao_deixa_passar_nada(self):
+        msg = mensagens.criar("barragem", "inform", "alerta-risco", "alerta")
+        self.assertFalse((~Template()).match(msg))
+        self.assertTrue(Template().match(msg))
 
     def test_id_da_proposta_acompanha_a_rodada(self):
         n = Negociacao(thread="desc-007", plano=PLANO, lideres=["lidera"])

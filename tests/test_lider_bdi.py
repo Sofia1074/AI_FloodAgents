@@ -28,8 +28,10 @@ def novo_lider():
     lider = CommunityLeader("liderA", "A")
     lider.pedidos = []
     lider.respostas = []
+    lider.votos = []
     lider.pedir_mitigacao = lider.pedidos.append
     lider.responder = lambda *args: lider.respostas.append(args)
+    lider.votar = lambda *args: lider.votos.append(args)
     return lider
 
 
@@ -84,6 +86,28 @@ class TestLiderBDI(unittest.TestCase):
         lider.bdi.set_belief("proposta", 3, 10.0)
         avancar(lider)
         self.assertEqual(lider.respostas, [(3, "rejeita", 0.0)])
+
+    def test_voto_sim_quando_o_caudal_cabe(self):
+        lider = novo_lider()
+        lider.bdi.set_belief("risco", "moderado")  # aceita até 50
+        lider.bdi.set_belief("votacao", 1, 50.0)
+        avancar(lider)
+        self.assertEqual(lider.votos, [(1, "sim")])
+        self.assertEqual(lider.respostas, [])      # votar não é responder à proposta
+
+    def test_voto_nao_quando_nao_cabe_e_sem_contraproposta(self):
+        lider = novo_lider()
+        lider.bdi.set_belief("risco", "elevado")   # aceita até 25
+        lider.bdi.set_belief("votacao", 2, 25.5)
+        avancar(lider)
+        self.assertEqual(lider.votos, [(2, "nao")])
+
+    def test_risco_critico_vota_nao(self):
+        lider = novo_lider()
+        lider.bdi.set_belief("risco", "critico")
+        lider.bdi.set_belief("votacao", 3, 10.0)
+        avancar(lider)
+        self.assertEqual(lider.votos, [(3, "nao")])
 
     def test_factos_do_asl_iguais_ao_config(self):
         """O .asl repete CAUDAL_ACEITE e RECURSOS_POR_RISCO: não podem divergir."""

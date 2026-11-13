@@ -46,6 +46,7 @@ class CommunityLeader(BDIAgent):
         risco_do_bairro (str): Último risco recebido do operador.
         recursos_pedidos (dict): Último pedido de recursos feito ao operador.
         propostas (dict): Propostas de descarga em análise, por id.
+        votacoes (dict): Pedidos de voto em análise, por id.
     """
 
     def __init__(self, nome, bairro, password=PASSWORD):
@@ -55,7 +56,8 @@ class CommunityLeader(BDIAgent):
         self.bairro = bairro
         self.risco_do_bairro = "baixo"   # último risco recebido do operador
         self.recursos_pedidos = {}       # bombas, barreiras, equipa...
-        self.propostas = {}              # id -> plano da barragem
+        self.propostas = {}              # id -> proposta da barragem
+        self.votacoes = {}               # id -> pedido de voto da barragem
         self._seq_propostas = 0
 
     def add_custom_actions(self, actions):
@@ -75,6 +77,9 @@ class CommunityLeader(BDIAgent):
             ".responder", (int, None, float),
             lambda id_proposta, decisao, caudal: self.responder(
                 id_proposta, str(decisao), caudal))
+        actions.add_procedure(
+            ".votar", (int, None),
+            lambda id_voto, voto: self.votar(id_voto, str(voto)))
 
     class OuvirMensagens(CyclicBehaviour):
         """Recebe alertas do operador do bairro e propostas da barragem e
@@ -99,14 +104,23 @@ class CommunityLeader(BDIAgent):
                 lider.bdi.set_belief("proposta", id_proposta,
                                      float(msg.corpo["caudal"]))
 
+            elif msg.tipo == "pedido_voto":
+                if not lider.rede.pode_comunicar(lider.nome, "barragem"):
+                    return
+                lider._seq_propostas += 1
+                id_voto = lider._seq_propostas
+                lider.votacoes[id_voto] = msg           # guarda o thread para votar
+                lider.bdi.set_belief("votacao", id_voto, float(msg.corpo["caudal"]))
+
     async def setup(self):
         """Arranca o behaviour que traduz mensagens em crenças.
 
-        O template deixa passar só os alertas dos operadores e as propostas
-        de descarga da barragem."""
+        O template deixa passar só os alertas dos operadores, as propostas de
+        descarga da negociação e os pedidos de voto da barragem."""
         registo.detalhe(self.nome, f"agente BDI ativo (bairro {self.bairro})")
         recebe = (mensagens.template(mensagens.ALERTA_RISCO, mensagens.INFORM)
-                  | mensagens.template(mensagens.NEGOCIAR_DESCARGA, mensagens.PROPOSE))
+                  | mensagens.template(mensagens.NEGOCIAR_DESCARGA, mensagens.PROPOSE)
+                  | mensagens.template(mensagens.VOTACAO, mensagens.PROPOSE))
         self.add_behaviour(self.OuvirMensagens(), recebe)
 
     def pedir_mitigacao(self, recursos):
@@ -155,3 +169,25 @@ class CommunityLeader(BDIAgent):
         registo.detalhe(self.nome, f"{'aceitou' if aceita else 'recusou'} o plano "
                                    f"(risco {self.risco_do_bairro}); contraproposta "
                                    f"{contraproposta}")
+
+    def votar(self, id_voto, voto):
+        """Vota a proposta final da barragem (ação `.votar`).
+
+        Num voto só há sim ou não: não se negoceia.
+
+        Args:
+            id_voto (int): Pedido de voto em análise.
+            voto (str): "sim" ou "nao".
+        """
+        pedido = self.votacoes.pop(id_voto, None)
+        if pedido is None or not self.rede.pode_comunicar(self.nome, "barragem"):
+            return
+        aceita = voto == "sim"
+        # o voto leva o thread e o id da proposta votada: um voto por negociação
+        self.submit(self.bdi.send(mensagens.criar(
+            "barragem",
+            mensagens.ACCEPT_PROPOSAL if aceita else mensagens.REJECT_PROPOSAL,
+            mensagens.VOTACAO, "voto", thread=pedido.thread,
+            id_proposta=pedido.corpo.get("id_proposta"), aceita=aceita)))
+        registo.detalhe(self.nome, f"votou {'sim' if aceita else 'não'} "
+                                   f"(risco {self.risco_do_bairro})")

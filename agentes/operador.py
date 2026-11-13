@@ -12,9 +12,27 @@ from risco import classificar_risco
 
 
 class NeighbourhoodOperator(Agent):
-    """Agentes 2A, 2B, 2C — Operador de um bairro."""
+    """Agentes 2A, 2B, 2C — Operador de um bairro.
+
+    Attributes:
+        nome (str): Nome do agente, como "opA".
+        bairro (str): "A", "B" ou "C".
+        ambiente (Ambiente): O mundo simulado, de onde lê o nível de água.
+        tanque_livre (float): Capacidade de retenção ainda livre.
+        risco (str): "baixo", "moderado", "elevado" ou "crítico".
+        motivos (list): Agravantes do risco atual (ver risco.py).
+        ultimo_risco_enviado (str | None): Último risco que avisou ao líder.
+    """
 
     def __init__(self, nome, bairro, ambiente, password=PASSWORD):
+        """Cria o operador de um bairro (ainda não o arranca).
+
+        Args:
+            nome (str): Nome do agente, que dá o JID (por exemplo "opA").
+            bairro (str): "A", "B" ou "C".
+            ambiente (Ambiente): O mundo simulado que o operador lê e altera.
+            password (str): Palavra-passe no servidor XMPP.
+        """
         super().__init__(jid(nome), password)
         self.nome = nome
         self.rede = REDE                 # quem comunica com quem
@@ -30,6 +48,8 @@ class NeighbourhoodOperator(Agent):
         """De tempos a tempos: mede, avalia o risco e alerta o líder."""
 
         async def run(self):
+            """Uma medição: lê o bairro, avalia o risco e, se o risco mudou ou
+            começou uma subida rápida, envia o alerta ao líder (só então)."""
             op = self.agent
             op.medir()
             op.avaliar_risco()
@@ -69,6 +89,8 @@ class NeighbourhoodOperator(Agent):
         """Recebe: pedidos de recursos do líder e avisos de descarga da barragem."""
 
         async def run(self):
+            """Espera uma mensagem: ativa a mitigação pedida pelo líder ou
+            regista o aviso de descarga da barragem."""
             op = self.agent
             msg = mensagens.ler(await self.receive(timeout=1))
             if msg is None:
@@ -88,6 +110,8 @@ class NeighbourhoodOperator(Agent):
                                 f"{conteudo['caudal']}, duração {conteudo['duracao']})")
 
     async def setup(self):
+        """Arranca o behaviour que escuta o líder e a barragem. A monitorização
+        só começa em `comecar()`, quando todos os agentes estão ativos."""
         registo.detalhe(self.nome, f"agente ativo (bairro {self.bairro})")
         # a monitorização só arranca em comecar(), quando todos os agentes
         # estiverem ativos (ver comecar)
@@ -120,14 +144,22 @@ class NeighbourhoodOperator(Agent):
     def medir(self):
         """Lê os sensores do bairro.
         O nível de água vem do ambiente; aqui calcula-se o que se deduz
-        dele: a capacidade de retenção livre."""
+        dele: a capacidade de retenção livre.
+
+        Returns:
+            tuple: (nível de água, capacidade de retenção livre).
+        """
         self.tanque_livre = max(0.0, CAPACIDADE_TANQUE - self.nivel_agua)
         return self.nivel_agua, self.tanque_livre
 
     def avaliar_risco(self):
         """Calcula o nível de risco a partir das medições: nível, velocidade
         de subida, chuva e capacidade de drenagem (regras em risco.py).
-        Guarda os agravantes em `self.motivos`."""
+        Guarda os agravantes em `self.motivos`.
+
+        Returns:
+            str: "baixo", "moderado", "elevado" ou "crítico".
+        """
         b = self.ambiente.bairros[self.bairro]
         self.risco, self.motivos = classificar_risco(
             nivel=b.nivel,
@@ -139,7 +171,12 @@ class NeighbourhoodOperator(Agent):
 
     def alertar_lider(self):
         """Prepara o alerta com o risco e os dados, para enviar ao líder
-        do bairro (o envio é feito pelo behaviour Monitorizar)."""
+        do bairro (o envio é feito pelo behaviour Monitorizar).
+
+        Returns:
+            dict: Bairro, risco, nível de água, velocidade de subida, motivos
+            e capacidade de retenção livre.
+        """
         return {
             "bairro": self.bairro,
             "risco": self.risco,
@@ -152,5 +189,9 @@ class NeighbourhoodOperator(Agent):
     def ativar_mitigacao(self, recursos):
         """Liga bombas, barreiras ou equipas no bairro.
         O efeito acontece no ambiente ao longo dos ciclos seguintes
-        (ver EFEITO_RECURSO em config.py)."""
+        (ver EFEITO_RECURSO em config.py).
+
+        Args:
+            recursos (dict): Quantidade por recurso, como {"bombas": 2}.
+        """
         self.ambiente.aplicar_mitigacao(self.bairro, recursos)

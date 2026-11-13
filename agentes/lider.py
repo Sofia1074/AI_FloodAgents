@@ -50,6 +50,13 @@ class CommunityLeader(BDIAgent):
     """
 
     def __init__(self, nome, bairro, password=PASSWORD):
+        """Cria o líder de um bairro e carrega o seu `lider.asl` (ainda não o arranca).
+
+        Args:
+            nome (str): Nome do agente, que dá o JID (por exemplo "liderA").
+            bairro (str): "A", "B" ou "C".
+            password (str): Palavra-passe no servidor XMPP.
+        """
         super().__init__(jid(nome), password, FICHEIRO_ASL)
         self.nome = nome
         self.rede = REDE                 # quem comunica com quem
@@ -86,6 +93,9 @@ class CommunityLeader(BDIAgent):
         transforma-os em crenças do agente BDI."""
 
         async def run(self):
+            """Espera uma mensagem e converte-a numa crença do `lider.asl`
+            (`risco`, `proposta`, `votacao` ou `contingencia`), que dispara os
+            planos de decisão."""
             lider = self.agent
             msg = mensagens.ler(await self.receive(timeout=1))
             if msg is None:

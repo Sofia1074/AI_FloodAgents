@@ -158,6 +158,7 @@ def resumo_respostas(respostas):
         str: Uma entrada por líder, pela ordem alfabética.
     """
     def texto(r):
+        """"sem resposta", "sim" ou "não" para uma resposta."""
         if r.get("sem_resposta"):
             return "sem resposta"
         return "sim" if r["aceita"] else "não"
@@ -221,6 +222,8 @@ class Propor(State):
     """PROPOR: envia o plano desta rodada aos líderes."""
 
     async def run(self):
+        """Envia a proposta da rodada a cada líder (protocolo negociar-descarga)
+        e passa a AGUARDAR. Na primeira rodada regista o início nas métricas."""
         n = self.agent.negociacao
         n.respostas = {}
         for lider in n.lideres:
@@ -240,6 +243,9 @@ class Aguardar(State):
     """AGUARDAR: recolhe as respostas dos líderes e decide o passo seguinte."""
 
     async def run(self):
+        """Recolhe as respostas desta rodada (ignora as de outras rodadas) e
+        escolhe o estado seguinte: ENCERRAR se há maioria ou já é a última
+        rodada, senão REFORMULAR. Quem não responde a tempo conta como "não"."""
         n = self.agent.negociacao
         esperados = [lider.lower() for lider in n.lideres]
         while len(n.respostas) < len(esperados):
@@ -270,6 +276,8 @@ class Reformular(State):
     """REFORMULAR: baixa o caudal para a contraproposta mais restritiva."""
 
     async def run(self):
+        """Cria o plano da rodada seguinte e volta a PROPOR. Se ninguém
+        contrapropôs, ou o novo plano não é seguro, passa a ENCERRAR."""
         dam = self.agent
         n = dam.negociacao
         novo = reformular(n.plano, n.respostas)
@@ -294,6 +302,8 @@ class Encerrar(State):
     """
 
     async def run(self):
+        """Marca a negociação como "votando" e lança o behaviour `Votacao`
+        com a proposta final."""
         dam = self.agent
         n = dam.negociacao
         n.fase = "votando"          # a negociação continua "ocupada" até ao fim do voto
@@ -312,6 +322,8 @@ class Votacao(OneShotBehaviour):
     """
 
     async def run(self):
+        """Recolhe os votos, decide e, no fim, liberta a barragem para abrir
+        outra negociação (mesmo que algo falhe)."""
         dam = self.agent
         n = dam.negociacao
         try:
@@ -414,6 +426,8 @@ class NegociarDescarga(FSMBehaviour):
     """Uma negociação de descarga, do primeiro plano até ao fim."""
 
     async def on_end(self):
+        """Chamado quando o FSM acaba. Se a negociação falhou antes da votação,
+        liberta a barragem para abrir outra."""
         # Se um estado falhou, a negociação nunca chegou à votação: liberta a
         # barragem para abrir outra. Se chegou, é a votação que a liberta.
         n = self.agent.negociacao
@@ -433,6 +447,13 @@ class DamOperator(Agent):
     """
 
     def __init__(self, nome, ambiente, password=PASSWORD):
+        """Cria o agente da barragem (ainda não o arranca).
+
+        Args:
+            nome (str): Nome do agente, que dá o JID ("barragem").
+            ambiente (Ambiente): O mundo simulado que a barragem lê e altera.
+            password (str): Palavra-passe no servidor XMPP.
+        """
         super().__init__(jid(nome), password)
         self.nome = nome
         self.rede = REDE                 # quem comunica com quem
@@ -449,6 +470,8 @@ class DamOperator(Agent):
         houver já uma negociação, abre uma negociação com os líderes."""
 
         async def run(self):
+            """Uma verificação: se é preciso descarregar e não há negociação em
+            curso, aplica a contingência (emergência) ou abre uma negociação."""
             dam = self.agent
             if dam.negociacao is not None or not dam.avaliar_descarga():
                 return
@@ -473,6 +496,8 @@ class DamOperator(Agent):
             dam.add_behaviour(*dam.criar_negociacao())
 
     async def setup(self):
+        """Arranca o behaviour `Monitorizar`, depois de `ESPERA_INICIAL`
+        segundos para os alertas dos bairros chegarem aos líderes."""
         registo.detalhe(self.nome, "agente ativo")
         arranque = datetime.now() + timedelta(seconds=ESPERA_INICIAL)
         # O Monitorizar não recebe mensagens: ~Template() (o complemento do
@@ -533,15 +558,22 @@ class DamOperator(Agent):
     def avaliar_descarga(self):
         """Decide se é preciso fazer uma descarga.
         Há descarga quando o reservatório passa o nível de alerta e não há
-        já uma descarga marcada ou a decorrer."""
+        já uma descarga marcada ou a decorrer.
+
+        Returns:
+            bool: True se é preciso descarregar.
+        """
         return (self.nivel_reservatorio > NIVEL_ALERTA_RESERVATORIO
                 and not self.ambiente.descarga_ativa())
 
     def propor_plano(self):
         """Cria um plano de descarga (caudal, atraso, duração).
         O plano é um dicionário. Quanto mais cheio o reservatório, maior o
-        caudal proposto (nunca acima do máximo seguro). Sem necessidade de
-        descarga devolve None."""
+        caudal proposto (nunca acima do máximo seguro).
+
+        Returns:
+            dict | None: O plano, ou None se não é preciso descarregar.
+        """
         if not self.avaliar_descarga():
             return None
 
@@ -608,7 +640,17 @@ class DamOperator(Agent):
         return True, ""
 
     def validar_plano(self, plano):
-        """Verifica se um plano respeita os limites de segurança."""
+        """Verifica se um plano respeita os limites de segurança.
+
+        Só olha para o plano. O estado do reservatório conta em `validar_execucao`.
+
+        Args:
+            plano (dict | None): Caudal, atraso e duração.
+
+        Returns:
+            bool: True se o caudal está entre 0 (exclusivo) e o máximo seguro e
+            o atraso e a duração são válidos. None não é um plano válido.
+        """
         if plano is None:
             return False
         return (0 < plano["caudal"] <= self.caudal_maximo_seguro
@@ -618,6 +660,10 @@ class DamOperator(Agent):
     def executar_descarga(self, plano):
         """Abre as comportas segundo um plano já validado.
         O ambiente liberta o caudal durante os ciclos do plano; o nível do
-        reservatório desce aos poucos."""
+        reservatório desce aos poucos.
+
+        Args:
+            plano (dict): Caudal, atraso e duração, já validados.
+        """
         self.ambiente.iniciar_descarga(plano["caudal"], plano["duracao"],
                                        plano["atraso"])

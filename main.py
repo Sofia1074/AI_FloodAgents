@@ -30,6 +30,15 @@ DURACAO = 60   # segundos de simulação
 
 
 def estado(barragem, operadores):
+    """Resume o estado atual numa linha: reservatório e nível e risco de cada bairro.
+
+    Args:
+        barragem (DamOperator): O agente da barragem.
+        operadores (list): Os três operadores de bairro.
+
+    Returns:
+        str: Texto como "reservatório 88.0% | A: 55.0 (elevado)  B: ...".
+    """
     bairros = "  ".join(f"{op.bairro}: {op.nivel_agua:.1f} ({op.avaliar_risco()})"
                         for op in operadores)
     return f"reservatório {barragem.nivel_reservatorio:.1f}% | {bairros}"
@@ -37,7 +46,13 @@ def estado(barragem, operadores):
 
 async def simular(ambiente):
     """Avança o ambiente um passo a cada PERIODO_CICLO segundos.
-    Mostra um evento quando a chuva muda e cada ciclo em modo verboso."""
+    Mostra um evento quando a chuva muda e cada ciclo em modo verboso.
+
+    Corre para sempre: quem a lança cancela-a no fim da simulação.
+
+    Args:
+        ambiente (Ambiente): O mundo simulado, que avança um ciclo por passo.
+    """
     chuva_anterior = None
     while True:
         await asyncio.sleep(PERIODO_CICLO)
@@ -51,7 +66,11 @@ async def simular(ambiente):
 
 
 def mostrar_metricas(r):
-    """Escreve no terminal as métricas principais, em poucas linhas."""
+    """Escreve no terminal as métricas principais, em poucas linhas.
+
+    Args:
+        r (dict): O resumo das métricas, o que devolve `recolha.resumo()`.
+    """
     det = " ".join(f"{b}:{'-' if c is None else f'{c} ciclos'}"
                    for b, c in r["tempo_deteccao_ciclos"].items())
     p = r["propostas"]
@@ -66,6 +85,17 @@ def mostrar_metricas(r):
 
 
 async def main(nome_cenario, verboso):
+    """Corre um cenário do princípio ao fim.
+
+    Cria o ambiente e os 7 agentes, arranca-os, deixa a simulação correr
+    `DURACAO` segundos, pára tudo e grava as métricas em `resultados/<cenário>/`.
+    Os operadores só começam a medir depois de todos os agentes estarem ativos
+    (ver `NeighbourhoodOperator.comecar`).
+
+    Args:
+        nome_cenario (str): Uma chave de `CENARIOS`, como "conflito".
+        verboso (bool): Se True, mostra também cada mensagem e cada ciclo.
+    """
     registo.iniciar(verboso)
     ambiente = Ambiente(CENARIOS[nome_cenario])
     recolha = metricas.iniciar(nome_cenario, ambiente)
@@ -109,7 +139,14 @@ async def main(nome_cenario, verboso):
 
 
 def ler_argumentos(argv):
-    """Devolve (cenário, verboso) a partir da linha de comando."""
+    """Lê o cenário e a opção -v da linha de comando.
+
+    Args:
+        argv (list): Os argumentos do programa, como `sys.argv`.
+
+    Returns:
+        tuple: (nome do cenário, verboso). Sem nome, usa o cenário por omissão.
+    """
     verboso = "-v" in argv or "--verbose" in argv
     nomes = [a for a in argv[1:] if not a.startswith("-")]
     nome = nomes[0] if nomes else CENARIO_POR_OMISSAO

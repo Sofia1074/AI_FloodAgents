@@ -80,11 +80,14 @@ async def main(nome_cenario, verboso):
           flush=True)
     print(f"Estado inicial: {estado(barragem, operadores)}", flush=True)
 
-    # líderes antes dos operadores, para receberem os primeiros alertas
     todos = [*lideres, *operadores, barragem]
     for agente in todos:
         await agente.start(auto_register=True)
     registo.detalhe("main", "7 agentes ativos")
+    # os operadores só medem quando todos estão ativos: assim o primeiro
+    # alerta nunca chega a um líder que ainda não está ligado
+    for operador in operadores:
+        operador.comecar()
 
     relogio = asyncio.create_task(simular(ambiente))
     await asyncio.sleep(DURACAO)

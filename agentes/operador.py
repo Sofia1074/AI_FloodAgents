@@ -89,11 +89,23 @@ class NeighbourhoodOperator(Agent):
 
     async def setup(self):
         registo.detalhe(self.nome, f"agente ativo (bairro {self.bairro})")
-        self.add_behaviour(self.Monitorizar(period=PERIODO_MEDICAO))
+        # a monitorização só arranca em comecar(), quando todos os agentes
+        # estiverem ativos (ver comecar)
         # só recebe pedidos de mitigação do líder e avisos de descarga da barragem
         pedidos = (mensagens.template(mensagens.PEDIR_MITIGACAO, mensagens.REQUEST)
                    | mensagens.template(mensagens.NEGOCIAR_DESCARGA, mensagens.INFORM))
         self.add_behaviour(self.OuvirMensagens(), pedidos)
+
+    def comecar(self):
+        """Arranca a monitorização do bairro.
+
+        Chamado pelo `main` depois de **todos** os agentes estarem ativos.
+        Se o operador medisse logo no arranque, o primeiro alerta podia sair
+        antes de o líder estar ligado ao servidor e perder-se (e o operador
+        só volta a alertar quando o risco muda). Assim o resultado não depende
+        da ordem em que os agentes arrancam.
+        """
+        self.add_behaviour(self.Monitorizar(period=PERIODO_MEDICAO))
 
     @property
     def nivel_agua(self):

@@ -22,4 +22,5 @@ async def main():
     await agent.stop()
 
 if __name__ == "__main__":
-    spade.run(main())
+    # sem o servidor embutido o agente fica à espera de um servidor XMPP que não existe
+    spade.run(main(), embedded_xmpp_server=True)

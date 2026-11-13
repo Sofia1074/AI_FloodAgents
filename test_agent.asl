@@ -1,3 +1,4 @@
+
 // Crença inicial
 alerta(cheia, nivel_alto).
 

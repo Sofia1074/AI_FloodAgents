@@ -61,6 +61,13 @@ justificar as escolhas com estes conceitos (BDI/tipos de agente, FIPA-ACL e
 ContractNet, método de votação, afetação de recursos escassos) e manter a saída
 do terminal curta e orientada a eventos (ver `docs/materia.md`).
 
+## Guias de laboratório do professor (como escrever o código)
+
+- `docs/spade_behaviours.md` (ISIA_01_PL): instalação do SPADE 4.1.4, agentes, `Periodic`/`Cyclic`/`OneShot`/`Timeout`/`FSM`, mensagens e `Template`. O código segue este estilo.
+- `docs/spade_bdi.md` (ISIA_01.1_PL): `spade_bdi` 0.3.3 e agentes BDI com ficheiro `.asl` (AgentSpeak). Os agentes devem ter uma parte BDI; hoje o líder (`agentes/lider.py` + `lider.asl`).
+- Docstrings: formato Google (`Args:`, `Returns:`, `Raises:`), documentação HTML com pdoc ou Sphinx (ISIA_01_PL docstrings). Ferramenta a confirmar com o professor.
+- O ambiente de execução é o `.venv` desta pasta (Python 3.12, SPADE 4.1.4, spade_bdi).
+
 ## Entregáveis
 
 - Código Python (SPADE).

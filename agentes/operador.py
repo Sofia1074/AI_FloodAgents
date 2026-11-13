@@ -1,11 +1,9 @@
 """Agentes 2A, 2B, 2C — Operador de um bairro."""
 
-import json
-
 from spade.agent import Agent
 from spade.behaviour import CyclicBehaviour, PeriodicBehaviour
-from spade.message import Message
 
+import mensagens
 import metricas
 import registo
 from config import CAPACIDADE_TANQUE, PASSWORD, PERIODO_MEDICAO, jid
@@ -47,11 +45,9 @@ class NeighbourhoodOperator(Agent):
             if not op.rede.pode_comunicar(op.nome, lider):
                 return
 
-            alerta = op.alertar_lider()
-            msg = Message(to=jid(lider))
-            msg.set_metadata("performative", "inform")
-            msg.body = json.dumps(alerta)
-            await self.send(msg)
+            await self.send(mensagens.criar(
+                lider, mensagens.INFORM, mensagens.ALERTA_RISCO, "alerta_risco",
+                **op.alertar_lider()))
             anterior = op.ultimo_risco_enviado
             op.ultimo_risco_enviado = op.risco
             metricas.alerta(op.bairro, op.risco)
@@ -74,21 +70,19 @@ class NeighbourhoodOperator(Agent):
 
         async def run(self):
             op = self.agent
-            msg = await self.receive(timeout=1)
+            msg = mensagens.ler(await self.receive(timeout=1))
             if msg is None:
                 return
-            origem = msg.sender.user
-            conteudo = json.loads(msg.body)
-            performative = msg.get_metadata("performative")
+            conteudo = msg.corpo
 
-            if origem.startswith("lider") and performative == "request":
+            if msg.tipo == "pedido_mitigacao":
                 op.ativar_mitigacao(conteudo["recursos"])
                 metricas.mitigacao(op.bairro, conteudo["recursos"])
                 registo.evento(
                     "MITIGAÇÃO",
                     f"bairro {op.bairro}: {conteudo['recursos']} ativados "
                     f"(nível {op.nivel_agua:.1f})")
-            elif origem == "barragem" and performative == "inform":
+            elif msg.tipo == "aviso_descarga":
                 # só um aviso: a água da descarga chega pelo ambiente
                 registo.detalhe(op.nome, f"aviso de descarga (caudal "
                                 f"{conteudo['caudal']}, duração {conteudo['duracao']})")
@@ -96,7 +90,10 @@ class NeighbourhoodOperator(Agent):
     async def setup(self):
         registo.detalhe(self.nome, f"agente ativo (bairro {self.bairro})")
         self.add_behaviour(self.Monitorizar(period=PERIODO_MEDICAO))
-        self.add_behaviour(self.OuvirMensagens())
+        # só recebe pedidos de mitigação do líder e avisos de descarga da barragem
+        pedidos = (mensagens.template(mensagens.PEDIR_MITIGACAO, mensagens.REQUEST)
+                   | mensagens.template(mensagens.NEGOCIAR_DESCARGA, mensagens.INFORM))
+        self.add_behaviour(self.OuvirMensagens(), pedidos)
 
     @property
     def nivel_agua(self):

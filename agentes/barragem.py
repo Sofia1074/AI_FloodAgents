@@ -1,12 +1,11 @@
 """Agente 1 — Operador da Barragem (existe um só)."""
 
-import json
 from datetime import datetime, timedelta
 
 from spade.agent import Agent
 from spade.behaviour import PeriodicBehaviour
-from spade.message import Message
 
+import mensagens
 import metricas
 import registo
 from config import (ESPERA_INICIAL, NIVEL_ALERTA_RESERVATORIO, PASSWORD,
@@ -41,25 +40,31 @@ class DamOperator(Agent):
                     metricas.rejeitada_seguranca(f"plano fora dos limites: {plano}")
                 return
 
-            # 1) propor o plano aos líderes com quem a rede permite falar
+            # 1) propor o plano aos líderes com quem a rede permite falar.
+            #    O thread identifica esta negociação: só votos com este id contam.
+            thread = mensagens.novo_id("desc")
             lideres = [f"lider{b}" for b in "ABC"
                        if dam.rede.pode_comunicar(dam.nome, f"lider{b}")]
             for lider in lideres:
-                msg = Message(to=jid(lider))
-                msg.set_metadata("performative", "propose")
-                msg.body = json.dumps(plano)
-                await self.send(msg)
-            registo.detalhe(dam.nome, f"plano proposto: {plano}")
+                await self.send(mensagens.criar(
+                    lider, mensagens.PROPOSE, mensagens.NEGOCIAR_DESCARGA,
+                    "proposta_descarga", thread=thread, **plano))
+            registo.detalhe(dam.nome, f"plano proposto ({thread}): {plano}")
             metricas.proposta(plano["caudal"])
 
-            # 2) recolher os votos (quem não responde a tempo conta como "não")
+            # 2) recolher os votos (quem não responde a tempo conta como "não").
+            #    O template deste behaviour só deixa passar mensagens do protocolo
+            #    votacao; o thread descarta votos de outras negociações.
             votos = {}
             while len(votos) < len(lideres):
-                resposta = await self.receive(timeout=TEMPO_ESPERA_VOTOS)
-                if resposta is None:
+                msg = await self.receive(timeout=TEMPO_ESPERA_VOTOS)
+                if msg is None:
                     break
-                aceitou = resposta.get_metadata("performative") == "accept-proposal"
-                votos[resposta.sender.user] = aceitou
+                voto = mensagens.ler(msg)
+                if (voto is None or voto.tipo != "voto" or voto.thread != thread
+                        or voto.remetente not in [l.lower() for l in lideres]):
+                    continue
+                votos[voto.remetente] = voto.performativa == mensagens.ACCEPT_PROPOSAL
 
             favoraveis = sum(votos.values())
             aprovado = favoraveis > len(lideres) / 2
@@ -85,18 +90,19 @@ class DamOperator(Agent):
                     f"(reservatório a {dam.nivel_reservatorio:.1f}%)")
                 for b in "ABC":
                     if dam.rede.pode_comunicar(dam.nome, f"op{b}"):
-                        info = Message(to=jid(f"op{b}"))
-                        info.set_metadata("performative", "inform")
-                        info.body = json.dumps(plano)
-                        await self.send(info)
+                        await self.send(mensagens.criar(
+                            f"op{b}", mensagens.INFORM, mensagens.NEGOCIAR_DESCARGA,
+                            "aviso_descarga", thread=thread, **plano))
             else:
                 dam.rejeitados += 1
 
     async def setup(self):
         registo.detalhe(self.nome, "agente ativo")
         arranque = datetime.now() + timedelta(seconds=ESPERA_INICIAL)
+        votos = mensagens.template(mensagens.VOTACAO, mensagens.ACCEPT_PROPOSAL,
+                                   mensagens.REJECT_PROPOSAL)
         self.add_behaviour(self.Monitorizar(period=PERIODO_MONITORIZACAO,
-                                            start_at=arranque))
+                                            start_at=arranque), votos)
 
     @property
     def nivel_reservatorio(self):

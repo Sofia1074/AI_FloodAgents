@@ -48,8 +48,8 @@ A estrutura organizacional está na Figura 1 do guia (`docs/gaia_estrutura.png`)
 - `agentes/`: `barragem.py` (DamOperator), `operador.py` (NeighbourhoodOperator), `lider.py` (CommunityLeader). Ainda não existe o Agente 4 (Diretório).
 - `cenarios.py`: só dados (estado inicial, chuva por ciclo, características, estoque e moeda de cada bairro). Tem os três cenários do guia e os de teste "calmo" e "cheia". O cenário `recursos_limitados` só fica completo com o estoque e o Contract Net (hoje o bairro B ainda se mitiga sozinho).
 - `main.py`: ponto de entrada.
-- Ainda não implementado: Diretório, Contract Net, moeda e estoque, negociação em várias rodadas, votação separada, contingência, controlo de estoque pelo operador (os recursos de mitigação ainda são ilimitados).
-- Bugs conhecidos por corrigir: corrida no arranque (operadores alertam antes de os líderes arrancarem), a barragem pode contar mensagens que não são votos, contrapropostas dos líderes nunca usadas, `json.loads` sem tratamento de erros.
+- Já implementado: `mensagens.py` e Templates por protocolo (t02, t03), arranque sem corrida (t04: os operadores só medem depois de `comecar()`), líder BDI (`lider.asl`), negociação da descarga em várias rodadas (t07): a barragem tem um `FSMBehaviour` por negociação (PROPOR, AGUARDAR, REFORMULAR, ENCERRAR) e baixa o caudal para a contraproposta mais restritiva dos líderes, até `MAX_RODADAS` (config.py).
+- Ainda não implementado: Diretório, Contract Net, moeda e estoque, votação separada da negociação (hoje a maioria da última rodada faz de voto, t08), validação depois do voto e contingência (t09), controlo de estoque pelo operador (os recursos de mitigação ainda são ilimitados).
 
 ## Matéria das aulas (referência obrigatória)
 

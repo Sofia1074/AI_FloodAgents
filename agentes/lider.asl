@@ -8,7 +8,9 @@
 //
 // As ações com ponto inicial (.registar, .pedir_mitigacao, .responder) estão
 // em agentes/lider.py. As mensagens e o envio ficam no Python; aqui só se decide.
-// Os átomos não levam acentos: "critico" em vez de "crítico".
+// Os átomos e os textos entre aspas não levam acentos ("critico", "contingencia"):
+// o spade_bdi lê este ficheiro com a codificação do sistema e o texto estraga-se
+// (nos comentários os acentos não fazem mal).
 
 // --- Crenças iniciais ---------------------------------------------------
 
@@ -60,6 +62,12 @@ recurso(critico, equipas, 1).
 
 +proposta(Id, Caudal) : risco(R) & caudal_aceite(R, Limite) & Caudal > Limite & Limite == 0 <-
     .responder(Id, rejeita, 0).
+
+// --- Contingência: a barragem decidiu sozinha (sem acordo ou emergência) --
+// O líder não vota nem negoceia, só fica a saber.
+
++contingencia(Caudal) <-
+    .registar("a barragem aplicou a contingencia").
 
 // --- Votação da proposta final: só sim ou não ----------------------------
 // Na votação não se negoceia, por isso não há contraproposta. Vota sim se o

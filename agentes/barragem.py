@@ -19,8 +19,18 @@ protocolo `votacao`, recolhe os votos e aprova com pelo menos 2 em 3. Cada
 líder tem um voto por negociação e quem não responde a tempo vota contra.
 Só depois a barragem executa a descarga aprovada.
 
-O número máximo de rodadas é MAX_RODADAS (config.py). A validação de segurança
-depois do voto e a contingência ficam para a tarefa t09.
+Segurança e contingência (secção 5.2 do guia): a votação nunca autoriza uma
+operação insegura, por isso a barragem valida o plano de novo, com o estado
+atual, depois da aprovação (`validar_execucao`). Sem acordo, ou em emergência,
+aplica um procedimento de contingência pré-definido (`executar_contingencia`),
+que respeita os limites técnicos e informa os líderes:
+
+- sem acordo (voto rejeitado ou plano aprovado inseguro) e reservatório a
+  NIVEL_CONTINGENCIA_RESERVATORIO ou mais;
+- emergência: reservatório a NIVEL_EMERGENCIA_RESERVATORIO ou mais, sem
+  negociação nem votação.
+
+O número máximo de rodadas é MAX_RODADAS (config.py).
 """
 
 from dataclasses import dataclass, field
@@ -34,7 +44,9 @@ from spade.template import Template
 import mensagens
 import metricas
 import registo
-from config import (ESPERA_INICIAL, MAX_RODADAS, NIVEL_ALERTA_RESERVATORIO,
+from config import (DURACAO_DESCARGA, ESPERA_INICIAL, FRACAO_CAUDAL_CONTINGENCIA,
+                    MAX_RODADAS, NIVEL_ALERTA_RESERVATORIO,
+                    NIVEL_CONTINGENCIA_RESERVATORIO, NIVEL_EMERGENCIA_RESERVATORIO,
                     PASSWORD, PERIODO_CICLO, PERIODO_MONITORIZACAO,
                     TEMPO_ESPERA_VOTOS, jid)
 from rede import REDE
@@ -151,6 +163,58 @@ def resumo_respostas(respostas):
         return "sim" if r["aceita"] else "não"
     return " ".join(f"{nome[-1].upper()}:{texto(r)}"
                     for nome, r in sorted(respostas.items()))
+
+
+async def avisar_descarga(comportamento, plano, thread, **extra):
+    """Informa os operadores dos bairros de que a barragem vai descarregar.
+
+    Args:
+        comportamento: O behaviour que envia (usa o seu `send`).
+        plano (dict): Plano executado (caudal, atraso, duração).
+        thread (str): Id da conversa.
+        **extra: Campos a acrescentar ao aviso, como `motivo`.
+    """
+    dam = comportamento.agent
+    for b in "ABC":
+        if dam.rede.pode_comunicar(dam.nome, f"op{b}"):
+            await comportamento.send(mensagens.criar(
+                f"op{b}", mensagens.INFORM, mensagens.NEGOCIAR_DESCARGA,
+                "aviso_descarga", thread=thread, **plano, **extra))
+
+
+async def executar_contingencia(comportamento, motivo):
+    """Aplica o procedimento de contingência da barragem (secção 5.2 do guia).
+
+    A contingência é um plano pré-definido (`DamOperator.plano_contingencia`)
+    que respeita os limites técnicos e não precisa de votação. Antes de abrir
+    as comportas passa pela mesma validação de segurança. Informa os líderes
+    e os operadores.
+
+    Args:
+        comportamento: O behaviour que envia as mensagens (usa o seu `send`).
+        motivo (str): Porque se aplica, como "sem acordo" ou "emergência".
+    """
+    dam = comportamento.agent
+    plano = dam.plano_contingencia()
+    seguro, razao = dam.validar_execucao(plano)
+    if not seguro:
+        registo.detalhe(dam.nome, f"contingência não aplicada: {razao}")
+        return
+    dam.executar_descarga(plano)
+    dam.descargas += 1
+    dam.contingencias += 1
+    metricas.descarga(plano["caudal"], plano["duracao"])
+    registo.evento(
+        "CONTINGÊNCIA",
+        f"{motivo}: caudal {plano['caudal']} durante {em_ciclos(plano['duracao'])} "
+        f"(reservatório a {dam.nivel_reservatorio:.1f}%)")
+    thread = mensagens.novo_id("cont")
+    for lider in [f"lider{b}" for b in "ABC"]:
+        if dam.rede.pode_comunicar(dam.nome, lider):
+            await comportamento.send(mensagens.criar(
+                lider, mensagens.INFORM, mensagens.NEGOCIAR_DESCARGA,
+                "aviso_contingencia", thread=thread, motivo=motivo, **plano))
+    await avisar_descarga(comportamento, plano, thread, motivo=motivo)
 
 
 class Propor(State):
@@ -313,7 +377,19 @@ class Votacao(OneShotBehaviour):
 
         if not aprovado:
             dam.rejeitados += 1
+            await self.sem_execucao("sem acordo")
             return
+
+        # a votação nunca autoriza uma operação insegura: valida-se de novo
+        # com o estado atual, porque a negociação e o voto demoraram
+        seguro, razao = dam.validar_execucao(plano)
+        if not seguro:
+            metricas.rejeitada_seguranca(razao)
+            registo.evento("SEGURANÇA",
+                           f"plano aprovado mas não executado: {razao}")
+            await self.sem_execucao("plano aprovado inseguro")
+            return
+
         dam.executar_descarga(plano)
         dam.descargas += 1
         metricas.descarga(plano["caudal"], plano["duracao"])
@@ -321,11 +397,17 @@ class Votacao(OneShotBehaviour):
             "DESCARGA",
             f"caudal {plano['caudal']} durante {em_ciclos(plano['duracao'])} "
             f"(reservatório a {dam.nivel_reservatorio:.1f}%)")
-        for b in "ABC":
-            if dam.rede.pode_comunicar(dam.nome, f"op{b}"):
-                await self.send(mensagens.criar(
-                    f"op{b}", mensagens.INFORM, mensagens.NEGOCIAR_DESCARGA,
-                    "aviso_descarga", thread=n.thread, **plano))
+        await avisar_descarga(self, plano, n.thread)
+
+    async def sem_execucao(self, motivo):
+        """A descarga não se fez: aplica a contingência se o reservatório já
+        está tão cheio que esperar pela próxima verificação seria arriscado.
+
+        Args:
+            motivo (str): Porque não houve descarga normal.
+        """
+        if self.agent.precisa_contingencia():
+            await executar_contingencia(self, motivo)
 
 
 class NegociarDescarga(FSMBehaviour):
@@ -360,6 +442,7 @@ class DamOperator(Agent):
         self.rejeitados = 0              # planos rejeitados pelos líderes
         self.negociacao = None           # negociação em curso
         self.negociacoes = []            # negociações terminadas
+        self.contingencias = 0           # descargas de contingência aplicadas
 
     class Monitorizar(PeriodicBehaviour):
         """De tempos a tempos: avalia o reservatório e, se for preciso e não
@@ -368,6 +451,11 @@ class DamOperator(Agent):
         async def run(self):
             dam = self.agent
             if dam.negociacao is not None or not dam.avaliar_descarga():
+                return
+
+            if dam.em_emergencia():
+                # a situação exige resposta imediata: sem negociação nem votação
+                await executar_contingencia(self, "emergência")
                 return
 
             plano = dam.propor_plano()
@@ -464,9 +552,60 @@ class DamOperator(Agent):
 
         return {
             "caudal": round(self.caudal_maximo_seguro * excesso, 1),
-            "atraso": 0,       # passos de simulação até começar
-            "duracao": 10,     # passos de simulação a descarregar
+            "atraso": 0,                  # passos de simulação até começar
+            "duracao": DURACAO_DESCARGA,  # passos de simulação a descarregar
         }
+
+    def plano_contingencia(self):
+        """O plano pré-definido da contingência: uma fração fixa do caudal
+        máximo seguro (`FRACAO_CAUDAL_CONTINGENCIA`), por isso nunca o excede.
+
+        Returns:
+            dict: Plano com caudal, atraso e duração.
+        """
+        return {"caudal": round(self.caudal_maximo_seguro * FRACAO_CAUDAL_CONTINGENCIA, 1),
+                "atraso": 0, "duracao": DURACAO_DESCARGA}
+
+    def em_emergencia(self):
+        """Emergência: o reservatório está tão cheio que não há tempo para
+        negociar (`NIVEL_EMERGENCIA_RESERVATORIO`).
+
+        Returns:
+            bool: True se a barragem deve aplicar a contingência já.
+        """
+        return self.nivel_reservatorio >= NIVEL_EMERGENCIA_RESERVATORIO
+
+    def precisa_contingencia(self):
+        """Sem acordo, o reservatório justifica a contingência?
+
+        Com o reservatório pouco acima do alerta, esperar e voltar a negociar
+        é seguro. A partir de `NIVEL_CONTINGENCIA_RESERVATORIO` já não é.
+
+        Returns:
+            bool: True se a barragem deve aplicar a contingência.
+        """
+        return (self.nivel_reservatorio >= NIVEL_CONTINGENCIA_RESERVATORIO
+                and not self.ambiente.descarga_ativa())
+
+    def validar_execucao(self, plano):
+        """Valida um plano antes de abrir as comportas, com o estado atual.
+
+        Vale para planos votados e para a contingência: nenhum voto autoriza
+        uma operação insegura (secção 5.2 do guia).
+
+        Args:
+            plano (dict): Caudal, atraso e duração.
+
+        Returns:
+            tuple: (seguro, razao). `razao` explica a recusa e é "" se seguro.
+        """
+        if not self.validar_plano(plano):
+            return False, "fora dos limites de segurança"
+        if self.ambiente.descarga_ativa():
+            return False, "já há uma descarga em curso"
+        if self.nivel_reservatorio <= NIVEL_ALERTA_RESERVATORIO:
+            return False, "o reservatório já desceu do nível de alerta"
+        return True, ""
 
     def validar_plano(self, plano):
         """Verifica se um plano respeita os limites de segurança."""

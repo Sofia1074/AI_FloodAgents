@@ -109,6 +109,21 @@ class TestLiderBDI(unittest.TestCase):
         avancar(lider)
         self.assertEqual(lider.votos, [(3, "nao")])
 
+    def test_aviso_de_contingencia_fica_como_crenca(self):
+        lider = novo_lider()
+        lider.bdi.set_belief("contingencia", 60.0)
+        avancar(lider)
+        self.assertIn("contingencia", lider.bdi.get_belief("contingencia"))
+        self.assertEqual(lider.votos, [])           # o líder só fica a saber
+
+    def test_textos_do_asl_sem_acentos(self):
+        """O spade_bdi lê o .asl com a codificação do sistema: um acento dentro
+        de um texto entre aspas estraga-se e o plano falha ao imprimir."""
+        with open(FICHEIRO_ASL, encoding="utf-8") as f:
+            sem_comentarios = re.sub(r"//.*", "", f.read())
+        for texto in re.findall(r'"[^"]*"', sem_comentarios):
+            self.assertTrue(texto.isascii(), texto)
+
     def test_factos_do_asl_iguais_ao_config(self):
         """O .asl repete CAUDAL_ACEITE e RECURSOS_POR_RISCO: não podem divergir."""
         with open(FICHEIRO_ASL, encoding="utf-8") as f:

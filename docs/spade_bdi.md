@@ -56,7 +56,7 @@ Lidas do código instalado em `.venv/Lib/site-packages/spade_bdi`.
 - O behaviour BDI (`agent.bdi`) só recebe mensagens com `performative = "BDI"` (as do `.send` do AgentSpeak). As mensagens FIPA normais não lhe chegam.
 - Crenças a partir do Python: `agent.bdi.set_belief("risco", "elevado")` (`str` vira átomo), `remove_belief`, `get_belief`, `get_beliefs`, `print_beliefs`. `set_belief` **substitui** as crenças com o mesmo nome e aridade que não unifiquem com a nova, por isso serve para valores únicos (o risco atual), e não para listas de factos.
 - Ações próprias em Python: sobrepor `add_custom_actions(self, actions)` e registar com `actions.add_procedure(".nome", (tipos...), funcao)` (ação sem resultado) ou `add_function(...)`. Dentro do `.asl` usam-se como `.nome(...)`. Para enviar uma mensagem a partir de uma ação (código síncrono) usa-se `self.submit(self.bdi.send(msg))`.
-- Os átomos do AgentSpeak começam por minúscula e não aceitam acentos (usar `critico`, não `crítico`).
+- Os átomos do AgentSpeak começam por minúscula e não aceitam acentos (usar `critico`, não `crítico`). Os textos entre aspas também não devem levar acentos: o `spade_bdi` abre o `.asl` com a codificação do sistema (cp1252 no Windows) e um "ê" estraga-se, o que faz o plano falhar ao imprimir. Nos comentários (`//`) os acentos não fazem mal.
 - `agent.pause_bdi()` e `agent.resume_bdi()` suspendem e retomam o ciclo BDI.
 
 ## 4. Como o BDI entra no projeto

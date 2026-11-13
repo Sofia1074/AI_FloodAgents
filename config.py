@@ -14,6 +14,11 @@ CAPACIDADE_RESERVATORIO = 10000.0  # volume que corresponde a 100% de enchimento
 PERIODO_MONITORIZACAO = 10         # segundos entre verificações do reservatório
 TEMPO_ESPERA_VOTOS = 3             # segundos à espera da resposta dos líderes
 MAX_RODADAS = 3                    # rodadas de negociação da descarga (N_max do guia)
+DURACAO_DESCARGA = 10              # ciclos de uma descarga (normal ou de contingência)
+# Contingência (secção 5.2 do guia): procedimento pré-definido da barragem
+NIVEL_CONTINGENCIA_RESERVATORIO = 90.0  # % a partir da qual, sem acordo, aplica-se
+NIVEL_EMERGENCIA_RESERVATORIO = 95.0    # % a partir da qual aplica-se logo, sem negociar
+FRACAO_CAUDAL_CONTINGENCIA = 0.75       # caudal da contingência, em fração do máximo seguro
 ESPERA_INICIAL = 8                 # segundos até a barragem fazer a 1.ª verificação
                                    # (dá tempo aos alertas dos bairros chegarem aos líderes)
 

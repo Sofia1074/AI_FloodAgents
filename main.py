@@ -99,7 +99,8 @@ async def main(nome_cenario, verboso):
     print("=== Fim ===", flush=True)
     print(f"Estado final: {estado(barragem, operadores)}", flush=True)
     print(f"Ciclos do ambiente: {ambiente.ciclo} | descargas executadas: "
-          f"{barragem.descargas} | planos rejeitados: {barragem.rejeitados}", flush=True)
+          f"{barragem.descargas} (contingências: {barragem.contingencias}) | "
+          f"planos rejeitados: {barragem.rejeitados}", flush=True)
     pasta = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                          "resultados", nome_cenario)
     recolha.exportar(pasta)

@@ -112,14 +112,20 @@ class CommunityLeader(BDIAgent):
                 lider.votacoes[id_voto] = msg           # guarda o thread para votar
                 lider.bdi.set_belief("votacao", id_voto, float(msg.corpo["caudal"]))
 
+            elif msg.tipo == "aviso_contingencia":
+                # a barragem decidiu sozinha: o líder fica a saber (crença) e o
+                # plano do .asl regista-o
+                lider.bdi.set_belief("contingencia", float(msg.corpo["caudal"]))
+
     async def setup(self):
         """Arranca o behaviour que traduz mensagens em crenças.
 
-        O template deixa passar só os alertas dos operadores, as propostas de
-        descarga da negociação e os pedidos de voto da barragem."""
+        O template deixa passar só os alertas dos operadores, as propostas e
+        os avisos de contingência da barragem (negociação) e os pedidos de voto."""
         registo.detalhe(self.nome, f"agente BDI ativo (bairro {self.bairro})")
         recebe = (mensagens.template(mensagens.ALERTA_RISCO, mensagens.INFORM)
-                  | mensagens.template(mensagens.NEGOCIAR_DESCARGA, mensagens.PROPOSE)
+                  | mensagens.template(mensagens.NEGOCIAR_DESCARGA, mensagens.PROPOSE,
+                                       mensagens.INFORM)
                   | mensagens.template(mensagens.VOTACAO, mensagens.PROPOSE))
         self.add_behaviour(self.OuvirMensagens(), recebe)
 

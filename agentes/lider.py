@@ -139,13 +139,18 @@ class CommunityLeader(BDIAgent):
         aceita = decisao == "aceita"
         contraproposta = None
         if decisao == "contraproposta":
-            contraproposta = {k: v for k, v in proposta.corpo.items() if k != "tipo"}
+            # o plano da barragem, com o caudal que o bairro aguenta
+            contraproposta = {c: proposta.corpo[c] for c in ("atraso", "duracao")
+                              if c in proposta.corpo}
             contraproposta["caudal"] = caudal
-        # o voto leva o thread da proposta, para a barragem o associar à negociação
+        # a resposta leva o thread e o id da proposta, para a barragem a associar
+        # à negociação e à rodada certas
         self.submit(self.bdi.send(mensagens.criar(
             "barragem",
             mensagens.ACCEPT_PROPOSAL if aceita else mensagens.REJECT_PROPOSAL,
-            mensagens.VOTACAO, "voto", thread=proposta.thread,
+            mensagens.NEGOCIAR_DESCARGA, "resposta_proposta",
+            thread=proposta.thread, id_proposta=proposta.corpo.get("id_proposta"),
+            rodada=proposta.corpo.get("rodada"),
             aceita=aceita, contraproposta=contraproposta)))
         registo.detalhe(self.nome, f"{'aceitou' if aceita else 'recusou'} o plano "
                                    f"(risco {self.risco_do_bairro}); contraproposta "

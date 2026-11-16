@@ -27,7 +27,8 @@ except Exception:      # spade ou spade_bdi indisponíveis
 async def arrancar_operadores_primeiro(resultado):
     """Põe em `resultado` o risco que o líder A conhece 3 s depois do arranque
     (o spade.run não devolve o valor da corrotina)."""
-    ambiente = Ambiente(CENARIOS["conflito"])          # o bairro A começa "elevado"
+    ambiente = Ambiente(CENARIOS["conflito"])
+    ambiente.bairros["A"].nivel = 55.0                 # o bairro A começa "elevado"
     operadores = [NeighbourhoodOperator(f"op{b}", b, ambiente) for b in "ABC"]
     lideres = [CommunityLeader(f"lider{b}", b) for b in "ABC"]
     agentes = [*operadores, *lideres]                  # ordem errada de propósito

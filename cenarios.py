@@ -15,12 +15,13 @@ Os bairros têm características fixas (_BAIRROS), como pede o guia:
 """
 
 _ESTOQUE_NORMAL = {"bombas": 3, "sacos_areia": 5, "barreiras": 2, "equipas": 1}
-_ESTOQUE_VAZIO = {"bombas": 0, "sacos_areia": 0, "barreiras": 0, "equipas": 0}
+# estoque de sobra: o bairro mitiga sozinho e não precisa de contratar
+_ESTOQUE_FARTO = {"bombas": 8, "sacos_areia": 5, "barreiras": 4, "equipas": 2}
 
 _BAIRROS = {
-    "A": {"exposicao": 0.08, "drenagem": 2.0, "fator_chuva": 0.6, "populacao": 4000},
-    "B": {"exposicao": 0.05, "drenagem": 3.0, "fator_chuva": 0.5, "populacao": 9000},
-    "C": {"exposicao": 0.03, "drenagem": 2.5, "fator_chuva": 0.4, "populacao": 2500},
+    "A": {"exposicao": 0.05, "drenagem": 2.0, "fator_chuva": 0.6, "populacao": 4000},
+    "B": {"exposicao": 0.04, "drenagem": 3.0, "fator_chuva": 0.5, "populacao": 9000},
+    "C": {"exposicao": 0.02, "drenagem": 2.5, "fator_chuva": 0.4, "populacao": 2500},
 }
 
 
@@ -42,7 +43,8 @@ CENARIOS = {
         "reservatorio": 55.0,
         "chuva": [1, 1, 2] + [8] * 6 + [3, 2, 1],
         "bairros": {
-            "A": _bairro("A", nivel=15.0, humidade=0.6, drenagem=1.0),
+            "A": _bairro("A", nivel=15.0, humidade=0.6, drenagem=1.0,
+                         estoque=_ESTOQUE_FARTO),
             "B": _bairro("B", nivel=5.0),
             "C": _bairro("C", nivel=5.0, humidade=0.2),
         },
@@ -50,28 +52,34 @@ CENARIOS = {
 
     # 2. Conflito de interesses: o reservatório passa o alerta e a chuva
     #    continua, por isso a barragem tem de descarregar. O bairro A, junto
-    #    ao rio e já em risco elevado, quer pouco caudal; B está seguro e
-    #    aceita; C, em risco moderado, aceita um caudal médio. Há negociação
-    #    e a votação decide por maioria.
+    #    ao rio e já em risco moderado, quer pouco caudal porque a descarga
+    #    lhe chega primeiro; B está seguro e aceita; C, em risco moderado,
+    #    aceita um caudal médio. Há negociação e a votação decide por
+    #    maioria. Sem descarga o reservatório passa dos 95% e a barragem
+    #    aplica a contingência; com descarga baixa, à custa do bairro A.
+    #    (Os números foram calibrados com uma simulação só do ambiente: sem
+    #    mitigação o A chega a risco elevado e, com ela, deve aguentar.)
     "conflito": {
         "reservatorio": 88.0,
-        "chuva": [4] * 20,
+        "chuva": [4] * 14,
         "bairros": {
-            "A": _bairro("A", nivel=55.0, humidade=0.5),
+            "A": _bairro("A", nivel=55.0, humidade=0.5, estoque=_ESTOQUE_FARTO),
             "B": _bairro("B", nivel=15.0),
             "C": _bairro("C", nivel=35.0),
         },
     },
 
-    # 3. Recursos limitados: o bairro B chega a risco elevado sem bombas nem
-    #    barreiras no estoque e tem de contratar recursos a A ou C, que estão
-    #    seguros e têm estoque (FIPA Contract Net).
+    # 3. Recursos limitados: o bairro B chega a risco elevado sem bombas no
+    #    estoque e tem de as contratar a A ou C, que estão seguros e têm
+    #    estoque (FIPA Contract Net). A chuva é curta, para B só precisar de
+    #    contratar uma vez.
     "recursos_limitados": {
         "reservatorio": 60.0,
-        "chuva": [4] * 12 + [1] * 4,
+        "chuva": [4] * 8 + [1] * 2,
         "bairros": {
             "A": _bairro("A", nivel=10.0),
-            "B": _bairro("B", nivel=50.0, humidade=0.7, estoque=_ESTOQUE_VAZIO, moeda=80.0),
+            "B": _bairro("B", nivel=50.0, humidade=0.7, moeda=80.0,
+                         estoque={"bombas": 0, "sacos_areia": 0, "barreiras": 1, "equipas": 1}),
             "C": _bairro("C", nivel=5.0),
         },
     },

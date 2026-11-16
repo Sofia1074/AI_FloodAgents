@@ -10,11 +10,12 @@ def jid(nome):
 
 # Parâmetros da barragem
 NIVEL_ALERTA_RESERVATORIO = 80.0   # % a partir da qual é preciso descarregar
-CAPACIDADE_RESERVATORIO = 10000.0  # volume que corresponde a 100% de enchimento
+CAPACIDADE_RESERVATORIO = 5000.0   # volume que corresponde a 100% de enchimento
+                                   # (com 10000 uma descarga de 50 nunca vencia a chuva)
 PERIODO_MONITORIZACAO = 10         # segundos entre verificações do reservatório
 TEMPO_ESPERA_VOTOS = 3             # segundos à espera da resposta dos líderes
 MAX_RODADAS = 3                    # rodadas de negociação da descarga (N_max do guia)
-DURACAO_DESCARGA = 10              # ciclos de uma descarga (normal ou de contingência)
+DURACAO_DESCARGA = 20              # ciclos de uma descarga (normal ou de contingência)
 # Contingência (secção 5.2 do guia): procedimento pré-definido da barragem
 NIVEL_CONTINGENCIA_RESERVATORIO = 90.0  # % a partir da qual, sem acordo, aplica-se
 NIVEL_EMERGENCIA_RESERVATORIO = 95.0    # % a partir da qual aplica-se logo, sem negociar
@@ -23,7 +24,8 @@ ESPERA_INICIAL = 8                 # segundos até a barragem fazer a 1.ª verif
                                    # (dá tempo aos alertas dos bairros chegarem aos líderes)
 
 # Parâmetros dos bairros
-PERIODO_MEDICAO = 5                # segundos entre medições do operador de bairro
+PERIODO_MEDICAO = 10               # segundos entre medições do operador de bairro
+                                   # (com 5 s o risco oscilava e gerava muitos alertas)
 CAPACIDADE_TANQUE = 100.0          # nível de água que o bairro consegue reter
 # nível de água (%) até ao qual cada risco se aplica; acima de 75 é "crítico"
 LIMITES_RISCO = [(25.0, "baixo"), (50.0, "moderado"), (75.0, "elevado")]
@@ -43,8 +45,10 @@ PROTECAO_MAXIMA = 0.9              # as barreiras nunca bloqueiam toda a água
 
 # Parâmetros do ambiente (ambiente.py). Modelo aproximado, ver limitações lá.
 PERIODO_CICLO = 2                  # segundos entre dois passos do ambiente
-CAUDAL_BASE_ENTRADA = 20.0         # caudal que entra no reservatório sem chuva
-AREA_BACIA = 10.0                  # caudal de entrada extra por mm de chuva
+CAUDAL_BASE_ENTRADA = 8.0          # caudal que entra no reservatório sem chuva
+AREA_BACIA = 3.0                   # caudal de entrada extra por mm de chuva
+                                   # (com 4 mm entram 20 por ciclo; as descargas
+                                   # propostas, de 25 a 60, passam a baixar o nível)
 NIVEL_JUSANTE_BASE = 1.0           # nível do rio a jusante sem descarga (m)
 FATOR_JUSANTE = 0.02               # metros a mais a jusante por unidade de caudal
 HUMIDADE_POR_MM = 0.02             # quanto a humidade do solo sobe por mm de chuva
@@ -88,3 +92,13 @@ MAX_RODADAS_CN = 3                 # rodadas de contraproposta no Contract Net
 TEMPO_ESPERA_CN = 3                # segundos à espera de cada resposta no Contract Net
 TEMPO_ESPERA_EXECUCAO = 10         # segundos à espera da confirmação do serviço
 PERIODO_OFERTAS = 5                # segundos entre revisões das ofertas no diretório
+
+
+# Experimentos (experimentos.py): a variável de ambiente FLOOD_PARAMETROS, em
+# JSON, muda constantes deste ficheiro sem o editar, por exemplo
+# {"MAX_RODADAS": 1}. Tem de ficar no fim, depois de todas as constantes.
+import json as _json
+import os as _os
+
+for _nome, _valor in _json.loads(_os.environ.get("FLOOD_PARAMETROS") or "{}").items():
+    globals()[_nome] = _valor

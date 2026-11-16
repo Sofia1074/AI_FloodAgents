@@ -26,7 +26,7 @@ from ambiente import Ambiente
 from cenarios import CENARIO_POR_OMISSAO, CENARIOS
 from config import PERIODO_CICLO
 
-DURACAO = 60   # segundos de simulação
+DURACAO = 50   # segundos de simulação
 
 
 def estado(barragem, operadores):
@@ -136,8 +136,9 @@ async def main(nome_cenario, verboso):
     print(f"Ciclos do ambiente: {ambiente.ciclo} | descargas executadas: "
           f"{barragem.descargas} (contingências: {barragem.contingencias}) | "
           f"planos rejeitados: {barragem.rejeitados}", flush=True)
-    pasta = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                         "resultados", nome_cenario)
+    # FLOOD_SAIDA: os experimentos (experimentos.py) guardam fora de resultados/<cenário>/
+    pasta = os.environ.get("FLOOD_SAIDA") or os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "resultados", nome_cenario)
     recolha.exportar(pasta)
     mostrar_metricas(recolha.resumo())
     print(f"Métricas gravadas em resultados/{nome_cenario}/", flush=True)

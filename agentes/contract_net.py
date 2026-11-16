@@ -506,7 +506,6 @@ class Vendas:
             operador, mensagens.REQUEST, mensagens.EXECUTAR_SERVICO, "executar_servico",
             thread=venda.thread, servico=venda.servico, quantidade=venda.quantidade,
             destino=comprador))
-        enviar.extend(lider.mensagens_ofertas())        # a oferta baixou
         return enviar
 
     def resultado_execucao(self, msg):
@@ -525,8 +524,7 @@ class Vendas:
         self.lider.estado.libertar(venda.servico, venda.quantidade)
         del self.abertas[venda.thread]
         motivo = msg.corpo.get("motivo", "falha na execução")
-        return [self._para_comprador(venda, mensagens.FAILURE, "falha", motivo=motivo),
-                *self.lider.mensagens_ofertas()]
+        return [self._para_comprador(venda, mensagens.FAILURE, "falha", motivo=motivo)]
 
     def pagamento(self, venda, msg):
         """Pagamento do comprador: a moeda do fornecedor sobe."""

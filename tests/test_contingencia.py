@@ -16,7 +16,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 try:
     from agentes.barragem import (DamOperator, Negociacao, Votacao,
                                   executar_contingencia)
-    from config import (NIVEL_ALERTA_RESERVATORIO, NIVEL_CONTINGENCIA_RESERVATORIO,
+    from config import (DURACAO_DESCARGA, NIVEL_ALERTA_RESERVATORIO, NIVEL_CONTINGENCIA_RESERVATORIO,
                         NIVEL_EMERGENCIA_RESERVATORIO)
     TEM_SPADE = True
 except Exception:      # spade indisponível
@@ -109,7 +109,7 @@ class TestExecutarContingencia(unittest.TestCase):
     def test_abre_as_comportas_e_informa_lideres_e_operadores(self):
         dam = barragem(96.0)
         enviadas = self.correr(dam, "emergência")
-        self.assertEqual(dam.ambiente.descargas, [(60.0, 10, 0)])
+        self.assertEqual(dam.ambiente.descargas, [(60.0, DURACAO_DESCARGA, 0)])
         self.assertEqual((dam.descargas, dam.contingencias), (1, 1))
         tipos = sorted(m.body.split('"tipo": "')[1].split('"')[0] for m in enviadas)
         self.assertEqual(tipos, ["aviso_contingencia"] * 3 + ["aviso_descarga"] * 3)
@@ -154,7 +154,7 @@ class TestDecidirDaVotacao(unittest.TestCase):
 
     def test_rejeitado_com_reservatorio_alto_aplica_a_contingencia(self):
         dam, _ = self.decidir(nivel=NIVEL_CONTINGENCIA_RESERVATORIO + 1, votos_a_favor=1)
-        self.assertEqual(dam.ambiente.descargas, [(60.0, 10, 0)])   # não o plano votado
+        self.assertEqual(dam.ambiente.descargas, [(60.0, DURACAO_DESCARGA, 0)])   # não o plano votado
         self.assertEqual((dam.contingencias, dam.rejeitados), (1, 1))
 
     def test_rejeitado_com_reservatorio_baixo_espera(self):

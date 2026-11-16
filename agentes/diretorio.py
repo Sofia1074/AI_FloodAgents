@@ -406,6 +406,8 @@ class ServiceDirectory(Agent):
         """
         c = msg.corpo
         fornecedor = msg.remetente
+        if msg.tipo == "publicar_ofertas":
+            return self.publicar_varias(msg)
         if msg.tipo == "publicar_oferta":
             oferta, motivo = self.registo_ofertas.publicar(
                 fornecedor, c.get("servico"), c.get("preco"), c.get("quantidade"))
@@ -439,6 +441,39 @@ class ServiceDirectory(Agent):
             registo.detalhe(self.nome, f"bairro {oferta.bairro} atualizou {texto}")
         return self._responder(msg, mensagens.AGREE, "oferta_registada",
                                **oferta.para_mensagem())
+
+    def publicar_varias(self, msg):
+        """GerirOferta em lote: o líder publica todas as ofertas numa só
+        mensagem, para o arranque não custar um pedido e uma confirmação por
+        oferta.
+
+        Args:
+            msg (mensagens.Recebida): REQUEST "publicar_ofertas", com a lista
+                `ofertas` de {servico, preco, quantidade}.
+
+        Returns:
+            spade.message.Message: AGREE "ofertas_registadas" com as ofertas
+            aceites (e as recusadas, com o motivo), ou REFUSE se nenhuma foi aceite.
+        """
+        aceites, recusadas = [], []
+        for pedido in msg.corpo.get("ofertas") or []:
+            oferta, motivo = self.registo_ofertas.publicar(
+                msg.remetente, pedido.get("servico"), pedido.get("preco"),
+                pedido.get("quantidade"))
+            if motivo:
+                recusadas.append({"servico": pedido.get("servico"), "motivo": motivo})
+            else:
+                aceites.append(oferta)
+        if not aceites:
+            motivo = recusadas[0]["motivo"] if recusadas else "nenhuma oferta no pedido"
+            registo.detalhe(self.nome, f"recusou ofertas de {msg.remetente}: {motivo}")
+            return self._responder(msg, mensagens.REFUSE, "oferta_recusada",
+                                   pedido=msg.tipo, motivo=motivo)
+        registo.evento("OFERTA", f"bairro {aceites[0].bairro} oferece " + ", ".join(
+            f"{o.servico} x{o.quantidade}" for o in aceites))
+        return self._responder(msg, mensagens.AGREE, "ofertas_registadas",
+                               ofertas=[o.para_mensagem() for o in aceites],
+                               recusadas=recusadas)
 
     def consultar_ofertas(self, msg):
         """Protocolo ConsultarOfertas: devolve a lista de fornecedores e preços.

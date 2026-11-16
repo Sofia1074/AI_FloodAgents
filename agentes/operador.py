@@ -91,8 +91,7 @@ class NeighbourhoodOperator(Agent):
 
         async def run(self):
             """Espera uma mensagem e trata-a conforme o tipo. Os pedidos do
-            líder recebem sempre duas respostas: primeiro AGREE ou REFUSE,
-            depois (se aceitou) INFORM ou FAILURE."""
+            líder recebem AGREE ou REFUSE (e FAILURE se a ativação falhar)."""
             op = self.agent
             msg = mensagens.ler(await self.receive(timeout=1))
             if msg is None:
@@ -219,9 +218,10 @@ class NeighbourhoodOperator(Agent):
         reservadas a contratos de venda não se usam.
 
         - Nada disponível: REFUSE "mitigacao_recusada" com o que falta.
-        - Algo disponível: AGREE "mitigacao_aceite" e, depois de ativar,
-          INFORM "mitigacao_ativada" (com o que ativou e o que falta), ou
-          FAILURE "mitigacao_falhou" se o estoque mudou entretanto.
+        - Algo disponível: AGREE "mitigacao_aceite" (com o que ativou e o que
+          falta). Só há uma segunda mensagem, FAILURE "mitigacao_falhou", se
+          o estoque mudou entretanto: sem falha não se confirma outra vez,
+          para poupar mensagens.
 
         Args:
             msg (mensagens.Recebida): REQUEST "pedido_mitigacao" com `recursos`.
@@ -254,9 +254,6 @@ class NeighbourhoodOperator(Agent):
         em_falta = f", faltam {falta}" if falta else ""
         registo.evento("MITIGAÇÃO", f"bairro {self.bairro}: {ativar} ativados "
                                     f"(nível {self.nivel_agua:.1f}{em_falta})")
-        respostas.append(resposta(mensagens.INFORM, "mitigacao_ativada",
-                                  recursos=ativar, falta=falta,
-                                  estoque=dict(self.estado.estoque)))
         return respostas
 
     def tratar_execucao_servico(self, msg):

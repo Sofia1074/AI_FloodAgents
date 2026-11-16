@@ -96,7 +96,7 @@ class CommunityLeader(BDIAgent):
         self._seq_propostas = 0
         self._seq_faltas = 0
         self._seq_compras = 0
-        self._ofertas = {}               # servico -> quantidade já publicada
+        self._ofertas_publicadas = False # as ofertas só se publicam uma vez
 
     @property
     def estado(self):
@@ -135,8 +135,7 @@ class CommunityLeader(BDIAgent):
         async def run(self):
             """Espera uma mensagem e converte-a numa crença do `lider.asl`
             (`risco`, `falta`, `proposta`, `votacao` ou `contingencia`), que
-            dispara os planos de decisão. Quando o risco ou o estoque mudam,
-            põe as ofertas do diretório em dia."""
+            dispara os planos de decisão."""
             lider = self.agent
             msg = mensagens.ler(await self.receive(timeout=1))
             if msg is None:
@@ -145,17 +144,12 @@ class CommunityLeader(BDIAgent):
             if msg.tipo == "alerta_risco":
                 lider.risco_do_bairro = msg.corpo["risco"]
                 lider.bdi.set_belief("risco", atomo(msg.corpo["risco"]))
-                # com risco elevado ou crítico o bairro guarda os recursos
-                for oferta in lider.mensagens_ofertas():
-                    await self.send(oferta)
 
             elif msg.protocolo == mensagens.PEDIR_MITIGACAO:
                 # o operador diz o que não tinha em estoque (AGREE e INFORM
                 # repetem a mesma falta, por isso só conta a primeira resposta)
                 if msg.tipo in TIPOS_COM_FALTA:
                     lider.registar_falta(msg.corpo.get("falta") or {})
-                for oferta in lider.mensagens_ofertas():    # o estoque mudou
-                    await self.send(oferta)
 
             elif msg.tipo == "proposta_descarga":
                 if not lider.rede.pode_comunicar(lider.nome, "barragem"):
@@ -231,32 +225,33 @@ class CommunityLeader(BDIAgent):
     # ---- mercado: ofertas, faltas e contratação -----------------------------
 
     def mensagens_ofertas(self):
-        """Mensagens ao diretório que põem as ofertas do bairro em dia.
+        """Mensagem ao diretório com as ofertas do bairro, uma só vez.
 
-        Só devolve o que mudou desde a última vez: publica um serviço quando
-        passa a haver excedente (regra 7), atualiza a quantidade quando muda
-        (por exemplo a 0, se o risco subir ou o estoque acabar). Um serviço
-        sem excedente que nunca foi publicado não gera mensagem.
+        Publica todos os serviços com excedente (regra 7) numa única mensagem
+        e não volta a publicar. As ofertas não são atualizadas depois: se o
+        estoque acabar ou o risco subir, o fornecedor recusa o CFP
+        (`Vendas.cfp` confere o estoque real), o que custa menos mensagens do
+        que manter o diretório em dia.
 
         Returns:
-            list: Mensagens SPADE (REQUEST de GerirOferta) para enviar ao
-            diretório; vazia se nada mudou ou o líder não tem ambiente.
+            list: Uma mensagem SPADE (REQUEST "publicar_ofertas"), ou lista
+            vazia se já publicou, se não há nada para oferecer ou se o líder
+            não tem ambiente.
         """
-        if self.ambiente is None or not self.rede.pode_comunicar(self.nome, "diretorio"):
+        if (self.ambiente is None or self._ofertas_publicadas
+                or not self.rede.pode_comunicar(self.nome, "diretorio")):
             return []
-        enviar = []
+        self._ofertas_publicadas = True
+        ofertas = []
         for servico in PRECO_BASE:
             quantidade = mercado.excedente(self.estado, servico, self.risco_do_bairro)
-            antes = self._ofertas.get(servico)
-            if antes == quantidade or (antes is None and quantidade == 0):
-                continue
-            tipo = "publicar_oferta" if antes is None else "atualizar_oferta"
-            enviar.append(mensagens.criar(
-                "diretorio", mensagens.REQUEST, mensagens.GERIR_OFERTA, tipo,
-                servico=servico, preco=mercado.preco_pedido_inicial(servico),
-                quantidade=quantidade))
-            self._ofertas[servico] = quantidade
-        return enviar
+            if quantidade > 0:
+                ofertas.append({"servico": servico, "quantidade": quantidade,
+                                "preco": mercado.preco_pedido_inicial(servico)})
+        if not ofertas:
+            return []
+        return [mensagens.criar("diretorio", mensagens.REQUEST, mensagens.GERIR_OFERTA,
+                                "publicar_ofertas", ofertas=ofertas)]
 
     def registar_falta(self, falta):
         """Transforma o que faltou no estoque em crenças `falta(Id, Recurso, Qtd)`.

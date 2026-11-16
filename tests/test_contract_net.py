@@ -65,10 +65,9 @@ class TestOperadorEstoque(unittest.TestCase):
     def test_com_estoque_parcial_aceita_ativa_e_gasta(self):
         antes = self.amb.bairros["A"].estoque["bombas"]          # 3
         msgs = self.opA.tratar_pedido_mitigacao(self.pedido({"bombas": 5}))
-        self.assertEqual(resumo(msgs), [("lidera", "agree", "mitigacao_aceite"),
-                                        ("lidera", "inform", "mitigacao_ativada")])
-        self.assertEqual(corpo(msgs[1])["recursos"], {"bombas": antes})
-        self.assertEqual(corpo(msgs[1])["falta"], {"bombas": 5 - antes})
+        self.assertEqual(resumo(msgs), [("lidera", "agree", "mitigacao_aceite")])
+        self.assertEqual(corpo(msgs[0])["recursos"], {"bombas": antes})
+        self.assertEqual(corpo(msgs[0])["falta"], {"bombas": 5 - antes})
         self.assertEqual(self.amb.bairros["A"].estoque["bombas"], 0)
         self.assertEqual(len(self.amb.bairros["A"].efeitos), antes)
 
@@ -164,13 +163,13 @@ class TestFornecedor(unittest.TestCase):
     def test_ignora_mensagens_de_threads_desconhecidos(self):
         self.assertEqual(self.cn(mensagens.PROPOSE, "proposta", preco=10.0), [])
 
-    def test_ofertas_so_publicam_quando_mudam(self):
-        primeiras = resumo(self.liderA.mensagens_ofertas())
-        self.assertTrue(primeiras)
-        self.assertEqual(self.liderA.mensagens_ofertas(), [])
-        self.liderA.risco_do_bairro = "elevado"
-        zeradas = self.liderA.mensagens_ofertas()
-        self.assertTrue(all(corpo(m)["quantidade"] == 0 for m in zeradas))
+    def test_ofertas_publicam_se_uma_vez_numa_so_mensagem(self):
+        msgs = self.liderA.mensagens_ofertas()
+        self.assertEqual(resumo(msgs), [("diretorio", "request", "publicar_ofertas")])
+        servicos = {o["servico"]: o["quantidade"] for o in corpo(msgs[0])["ofertas"]}
+        self.assertEqual(servicos["bombas"], 2)              # 3 - reserva mínima 1
+        self.assertNotIn("equipas", servicos)                # sem excedente
+        self.assertEqual(self.liderA.mensagens_ofertas(), [])  # não repete
 
 
 @unittest.skipUnless(TEM_SPADE, "spade_bdi não está disponível")

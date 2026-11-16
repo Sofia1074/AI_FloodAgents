@@ -59,3 +59,32 @@ RECURSOS_POR_RISCO = {
 }
 # caudal máximo que o líder aceita da barragem, conforme o risco do bairro
 CAUDAL_ACEITE = {"baixo": 80.0, "moderado": 50.0, "elevado": 25.0, "crítico": 0.0}
+
+# Mercado de serviços entre bairros (secções 3 e 5.3 do guia, regras 7 a 10
+# do modelo Gaia). Moeda e preços são fictícios.
+#
+# Preço base de cada serviço, por unidade (nos sacos de areia, por lote).
+# O guia só dá sacos de areia, bomba e equipa; o preço das barreiras é um
+# valor fictício escolhido pela equipa, para também poderem ser contratadas.
+PRECO_BASE = {
+    "sacos_areia": 10.0,
+    "bombas": 20.0,
+    "equipas": 30.0,
+    "barreiras": 15.0,
+}
+# Reserva mínima (regra 7): um bairro só oferece um recurso se, depois de o
+# vender, ainda ficar com pelo menos isto em estoque livre
+# (estoque - reservado - quantidade >= RESERVA_MINIMA).
+RESERVA_MINIMA = {"bombas": 1, "sacos_areia": 2, "barreiras": 1, "equipas": 1}
+# "Condições adequadas" para oferecer (secção 3 do guia): um bairro em risco
+# elevado ou crítico guarda os recursos para si e não vende.
+RISCOS_QUE_PERMITEM_OFERECER = ("baixo", "moderado")
+# Riscos que levam o líder a contratar o que falta no estoque local
+# (atividade IdentificarNecessidade do papel Comprador).
+RISCOS_QUE_PEDEM_CONTRATACAO = ("elevado", "crítico")
+FRACAO_ABERTURA_COMPRADOR = 0.6    # o comprador abre com 60% do preço base
+FRACAO_MINIMA_VENDEDOR = 0.7       # o vendedor aceita a partir de 70% do preço base
+MAX_RODADAS_CN = 3                 # rodadas de contraproposta no Contract Net
+TEMPO_ESPERA_CN = 3                # segundos à espera de cada resposta no Contract Net
+TEMPO_ESPERA_EXECUCAO = 10         # segundos à espera da confirmação do serviço
+PERIODO_OFERTAS = 5                # segundos entre revisões das ofertas no diretório

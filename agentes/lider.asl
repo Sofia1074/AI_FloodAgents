@@ -4,7 +4,7 @@
 //             análise (vem da barragem) e o que o bairro aguenta.
 // Desejos:    proteger o bairro e, quando o risco sobe, mitigá-lo.
 // Intenções:  pedir recursos ao operador; aceitar, contrapropor ou rejeitar
-//             uma descarga.
+//             uma descarga; contratar a outro bairro o que falta no estoque.
 //
 // As ações com ponto inicial (.registar, .pedir_mitigacao, .responder) estão
 // em agentes/lider.py. As mensagens e o envio ficam no Python; aqui só se decide.
@@ -48,6 +48,20 @@ recurso(critico, equipas, 1).
 +!mitigar(R) <-
     .findall(par(T, N), recurso(R, T, N), Pedido);
     .pedir_mitigacao(Pedido).
+
+// --- Falta de estoque: contratar a outro bairro (papel Comprador) -------
+// O operador não tinha estoque para tudo o que foi pedido. Com risco elevado
+// ou crítico, o líder contrata o que falta (FIPA Contract Net). Com risco
+// mais baixo, não gasta moeda (espelha RISCOS_QUE_PEDEM_CONTRATACAO em config.py).
+
++falta(Id, Recurso, Qtd) : risco(elevado) <-
+    .contratar(Recurso, Qtd).
+
++falta(Id, Recurso, Qtd) : risco(critico) <-
+    .contratar(Recurso, Qtd).
+
++falta(Id, Recurso, Qtd) : risco(R) & R \== elevado & R \== critico <-
+    .registar("falta um recurso, mas o risco nao justifica contratar").
 
 // --- Proposta de descarga: aceitar, contrapropor ou rejeitar ------------
 // Cabe no que o risco do bairro permite? Aceita.

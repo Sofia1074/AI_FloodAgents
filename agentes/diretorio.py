@@ -56,16 +56,9 @@ from dataclasses import asdict, dataclass, field
 
 import mensagens
 import registo
-from config import EFEITO_RECURSO, PASSWORD, jid
+from config import EFEITO_RECURSO, PASSWORD, PRECO_BASE, jid
 
-# Preços base fictícios (secção 5.3 do guia). As barreiras não têm preço no
-# guia: podem ser oferecidas, mas sem preço de referência (None).
-PRECO_BASE = {
-    "sacos_areia": 10.0,   # por lote
-    "bombas": 20.0,
-    "equipas": 30.0,
-    "barreiras": None,
-}
+# Os preços base fictícios (secção 5.3 do guia) estão em config.py.
 # serviços que o diretório aceita: os recursos que existem no ambiente
 SERVICOS = set(EFEITO_RECURSO)
 

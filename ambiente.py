@@ -26,6 +26,8 @@ Limitações (o guia pede que fiquem documentadas):
 - O nível do bairro está em percentagem da capacidade de retenção (0 a 100);
   o nível a jusante está em metros, mas só serve de indicador.
 - As medições não têm ruído nem falhas de sensor.
+- Um recurso ativado gasta-se: sai do estoque e não volta quando o efeito
+  acaba (uma bomba ou equipa "usada" não regressa ao bairro).
 """
 
 from dataclasses import dataclass, field
@@ -54,6 +56,8 @@ class Bairro:
         exposicao: fração do caudal de descarga que chega ao bairro.
         velocidade: variação do nível no último ciclo (positiva = a subir).
         estoque: recursos físicos guardados no bairro (bombas, barreiras...).
+        reservado: parte do estoque presa a contratos em curso (Contract Net).
+            O líder fornecedor reserva e liberta; o operador gasta.
         moeda: saldo fictício do bairro, gerido pelo líder.
         populacao: habitantes, usado pelos líderes para definir prioridades.
         efeitos: recursos de mitigação ativos, cada um com os ciclos que faltam.
@@ -67,6 +71,7 @@ class Bairro:
     exposicao: float = 0.05
     velocidade: float = 0.0
     estoque: dict = field(default_factory=dict)
+    reservado: dict = field(default_factory=dict)
     moeda: float = 0.0
     populacao: int = 0
     efeitos: list = field(default_factory=list)
@@ -88,6 +93,101 @@ class Bairro:
     def protecao(self):
         """Fração da água da descarga travada pelas barreiras ativas."""
         return min(PROTECAO_MAXIMA, sum(e["protecao"] for e in self.efeitos))
+
+    # ---- estoque. Regras de segurança do ExecutorLocal (modelo Gaia):
+    #      estoque >= 0 e reservado <= estoque, para cada recurso. -------
+
+    def livre(self, recurso):
+        """Unidades de um recurso que não estão reservadas a contratos.
+
+        Args:
+            recurso (str): Por exemplo "bombas".
+
+        Returns:
+            int: estoque - reservado (nunca negativo).
+        """
+        return max(0, self.estoque.get(recurso, 0) - self.reservado.get(recurso, 0))
+
+    def separar_pedido(self, recursos):
+        """Divide um pedido no que o estoque livre cobre e no que falta.
+
+        Args:
+            recursos (dict): Quantidade pedida por recurso, como {"bombas": 2}.
+
+        Returns:
+            tuple: (dict com o que se pode ativar, dict com o que falta).
+            Os recursos com quantidade 0 não aparecem.
+        """
+        ativar, falta = {}, {}
+        for recurso, quantidade in recursos.items():
+            quantidade = int(quantidade)
+            usar = min(quantidade, self.livre(recurso))
+            if usar > 0:
+                ativar[recurso] = usar
+            if quantidade - usar > 0:
+                falta[recurso] = quantidade - usar
+        return ativar, falta
+
+    def gastar(self, recursos):
+        """Tira recursos do estoque livre (mitigação no próprio bairro).
+
+        Tudo ou nada: se algum recurso não chegar, não gasta nenhum.
+
+        Args:
+            recursos (dict): Quantidade por recurso.
+
+        Returns:
+            bool: True se gastou, False se o estoque livre não chegava.
+        """
+        if any(self.livre(r) < int(q) for r, q in recursos.items()):
+            return False
+        for recurso, quantidade in recursos.items():
+            self.estoque[recurso] = self.estoque.get(recurso, 0) - int(quantidade)
+        return True
+
+    def reservar(self, recurso, quantidade):
+        """Reserva unidades livres para um contrato (líder fornecedor).
+
+        Args:
+            recurso (str): Recurso a reservar.
+            quantidade (int): Unidades.
+
+        Returns:
+            bool: True se reservou, False se não havia estoque livre suficiente.
+        """
+        quantidade = int(quantidade)
+        if quantidade <= 0 or self.livre(recurso) < quantidade:
+            return False
+        self.reservado[recurso] = self.reservado.get(recurso, 0) + quantidade
+        return True
+
+    def libertar(self, recurso, quantidade):
+        """Liberta uma reserva que não chegou a ser usada (contrato falhado).
+
+        Args:
+            recurso (str): Recurso reservado.
+            quantidade (int): Unidades a libertar.
+        """
+        atual = self.reservado.get(recurso, 0)
+        self.reservado[recurso] = max(0, atual - int(quantidade))
+
+    def gastar_reserva(self, recurso, quantidade):
+        """Usa unidades reservadas (o operador executa um serviço contratado).
+
+        Args:
+            recurso (str): Recurso reservado.
+            quantidade (int): Unidades a usar.
+
+        Returns:
+            bool: True se gastou, False se não havia essa reserva.
+        """
+        quantidade = int(quantidade)
+        if (quantidade <= 0 or self.reservado.get(recurso, 0) < quantidade
+                or self.estoque.get(recurso, 0) < quantidade):
+            return False
+        self.reservado[recurso] -= quantidade
+        self.estoque[recurso] -= quantidade
+        return True
 
 
 class Ambiente:

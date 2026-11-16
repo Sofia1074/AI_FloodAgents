@@ -86,11 +86,13 @@ class NeighbourhoodOperator(Agent):
                                          f"{op.risco} {dados}")
 
     class OuvirMensagens(CyclicBehaviour):
-        """Recebe: pedidos de recursos do líder e avisos de descarga da barragem."""
+        """Recebe: pedidos de mitigação e de execução de serviços do líder, e
+        avisos de descarga da barragem."""
 
         async def run(self):
-            """Espera uma mensagem: ativa a mitigação pedida pelo líder ou
-            regista o aviso de descarga da barragem."""
+            """Espera uma mensagem e trata-a conforme o tipo. Os pedidos do
+            líder recebem sempre duas respostas: primeiro AGREE ou REFUSE,
+            depois (se aceitou) INFORM ou FAILURE."""
             op = self.agent
             msg = mensagens.ler(await self.receive(timeout=1))
             if msg is None:
@@ -98,12 +100,11 @@ class NeighbourhoodOperator(Agent):
             conteudo = msg.corpo
 
             if msg.tipo == "pedido_mitigacao":
-                op.ativar_mitigacao(conteudo["recursos"])
-                metricas.mitigacao(op.bairro, conteudo["recursos"])
-                registo.evento(
-                    "MITIGAÇÃO",
-                    f"bairro {op.bairro}: {conteudo['recursos']} ativados "
-                    f"(nível {op.nivel_agua:.1f})")
+                for resposta in op.tratar_pedido_mitigacao(msg):
+                    await self.send(resposta)
+            elif msg.tipo == "executar_servico":
+                for resposta in op.tratar_execucao_servico(msg):
+                    await self.send(resposta)
             elif msg.tipo == "aviso_descarga":
                 # só um aviso: a água da descarga chega pelo ambiente
                 registo.detalhe(op.nome, f"aviso de descarga (caudal "
@@ -115,8 +116,10 @@ class NeighbourhoodOperator(Agent):
         registo.detalhe(self.nome, f"agente ativo (bairro {self.bairro})")
         # a monitorização só arranca em comecar(), quando todos os agentes
         # estiverem ativos (ver comecar)
-        # só recebe pedidos de mitigação do líder e avisos de descarga da barragem
+        # só recebe pedidos do líder (mitigação e serviços contratados) e
+        # avisos de descarga da barragem
         pedidos = (mensagens.template(mensagens.PEDIR_MITIGACAO, mensagens.REQUEST)
+                   | mensagens.template(mensagens.EXECUTAR_SERVICO, mensagens.REQUEST)
                    | mensagens.template(mensagens.NEGOCIAR_DESCARGA, mensagens.INFORM))
         self.add_behaviour(self.OuvirMensagens(), pedidos)
 
@@ -186,12 +189,113 @@ class NeighbourhoodOperator(Agent):
             "tanque_livre": self.tanque_livre,
         }
 
+    @property
+    def estado(self):
+        """O bairro no ambiente: nível, estoque, reservas e moeda."""
+        return self.ambiente.bairros[self.bairro]
+
     def ativar_mitigacao(self, recursos):
-        """Liga bombas, barreiras ou equipas no bairro.
+        """Liga bombas, barreiras ou equipas no bairro, gastando o estoque.
         O efeito acontece no ambiente ao longo dos ciclos seguintes
         (ver EFEITO_RECURSO em config.py).
 
         Args:
             recursos (dict): Quantidade por recurso, como {"bombas": 2}.
+
+        Returns:
+            bool: True se ativou, False se o estoque livre não chegava
+            (nesse caso não gasta nada).
         """
+        if not self.estado.gastar(recursos):
+            return False
         self.ambiente.aplicar_mitigacao(self.bairro, recursos)
+        return True
+
+    def tratar_pedido_mitigacao(self, msg):
+        """Protocolo PedirMitigacao, do lado do ExecutorLocal.
+
+        O operador controla o estoque físico (secção 2.1 do guia): só ativa o
+        que o estoque livre (estoque - reservado) cobre. As unidades
+        reservadas a contratos de venda não se usam.
+
+        - Nada disponível: REFUSE "mitigacao_recusada" com o que falta.
+        - Algo disponível: AGREE "mitigacao_aceite" e, depois de ativar,
+          INFORM "mitigacao_ativada" (com o que ativou e o que falta), ou
+          FAILURE "mitigacao_falhou" se o estoque mudou entretanto.
+
+        Args:
+            msg (mensagens.Recebida): REQUEST "pedido_mitigacao" com `recursos`.
+
+        Returns:
+            list: As respostas a enviar ao líder, pela ordem.
+        """
+        pedido = {r: int(q) for r, q in msg.corpo.get("recursos", {}).items()}
+        ativar, falta = self.estado.separar_pedido(pedido)
+
+        def resposta(performativa, tipo, **dados):
+            """Resposta ao líder, no mesmo protocolo e conversa do pedido."""
+            return mensagens.criar(msg.remetente, performativa,
+                                   mensagens.PEDIR_MITIGACAO, tipo,
+                                   thread=msg.thread, bairro=self.bairro, **dados)
+
+        if not ativar:
+            registo.evento("MITIGAÇÃO", f"bairro {self.bairro}: sem estoque para "
+                                        f"{pedido} (recusado)")
+            return [resposta(mensagens.REFUSE, "mitigacao_recusada",
+                             motivo="sem estoque", falta=falta)]
+
+        respostas = [resposta(mensagens.AGREE, "mitigacao_aceite",
+                              recursos=ativar, falta=falta)]
+        if not self.ativar_mitigacao(ativar):
+            respostas.append(resposta(mensagens.FAILURE, "mitigacao_falhou",
+                                      motivo="o estoque mudou", falta=pedido))
+            return respostas
+        metricas.mitigacao(self.bairro, ativar)
+        em_falta = f", faltam {falta}" if falta else ""
+        registo.evento("MITIGAÇÃO", f"bairro {self.bairro}: {ativar} ativados "
+                                    f"(nível {self.nivel_agua:.1f}{em_falta})")
+        respostas.append(resposta(mensagens.INFORM, "mitigacao_ativada",
+                                  recursos=ativar, falta=falta,
+                                  estoque=dict(self.estado.estoque)))
+        return respostas
+
+    def tratar_execucao_servico(self, msg):
+        """Protocolo ExecutarServico: usa recursos reservados num contrato.
+
+        O líder fornecedor já reservou as unidades (Contract Net). O operador
+        gasta essa reserva e ativa os recursos no bairro comprador (a única
+        vez em que um papel mexe noutro bairro, ver modelo Gaia). Responde
+        AGREE e depois INFORM "servico_executado" ou FAILURE "servico_falhou".
+
+        Args:
+            msg (mensagens.Recebida): REQUEST "executar_servico" com
+                `servico`, `quantidade` e `destino`.
+
+        Returns:
+            list: As respostas a enviar ao líder, pela ordem.
+        """
+        c = msg.corpo
+        servico, quantidade, destino = c.get("servico"), int(c.get("quantidade", 0)), c.get("destino")
+
+        def resposta(performativa, tipo, **dados):
+            """Resposta ao líder, no mesmo protocolo e conversa do pedido."""
+            return mensagens.criar(msg.remetente, performativa,
+                                   mensagens.EXECUTAR_SERVICO, tipo, thread=msg.thread,
+                                   servico=servico, quantidade=quantidade,
+                                   destino=destino, **dados)
+
+        respostas = [resposta(mensagens.AGREE, "execucao_aceite")]
+        if destino not in self.ambiente.bairros or destino == self.bairro:
+            respostas.append(resposta(mensagens.FAILURE, "servico_falhou",
+                                      motivo="bairro de destino inválido"))
+            return respostas
+        if not self.estado.gastar_reserva(servico, quantidade):
+            respostas.append(resposta(mensagens.FAILURE, "servico_falhou",
+                                      motivo="recurso não reservado"))
+            return respostas
+        self.ambiente.aplicar_mitigacao(destino, {servico: quantidade})
+        metricas.mitigacao(destino, {servico: quantidade})
+        registo.evento("SERVIÇO", f"bairro {self.bairro} levou {servico} x{quantidade} "
+                                  f"ao bairro {destino}")
+        respostas.append(resposta(mensagens.INFORM, "servico_executado"))
+        return respostas

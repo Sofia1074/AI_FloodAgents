@@ -21,7 +21,7 @@ import spade
 
 import metricas
 import registo
-from agentes import CommunityLeader, DamOperator, NeighbourhoodOperator
+from agentes import CommunityLeader, DamOperator, NeighbourhoodOperator, ServiceDirectory
 from ambiente import Ambiente
 from cenarios import CENARIO_POR_OMISSAO, CENARIOS
 from config import PERIODO_CICLO
@@ -87,7 +87,7 @@ def mostrar_metricas(r):
 async def main(nome_cenario, verboso):
     """Corre um cenário do princípio ao fim.
 
-    Cria o ambiente e os 7 agentes, arranca-os, deixa a simulação correr
+    Cria o ambiente e os 8 agentes, arranca-os, deixa a simulação correr
     `DURACAO` segundos, pára tudo e grava as métricas em `resultados/<cenário>/`.
     Os operadores só começam a medir depois de todos os agentes estarem ativos
     (ver `NeighbourhoodOperator.comecar`).
@@ -103,17 +103,19 @@ async def main(nome_cenario, verboso):
     metricas.instalar_contador_mensagens()
     barragem = DamOperator("barragem", ambiente)
     operadores = [NeighbourhoodOperator(f"op{b}", b, ambiente) for b in "ABC"]
-    lideres = [CommunityLeader(f"lider{b}", b) for b in "ABC"]
+    lideres = [CommunityLeader(f"lider{b}", b, ambiente) for b in "ABC"]
+    diretorio = ServiceDirectory("diretorio")
 
     print(f"=== Cenário '{nome_cenario}' | {DURACAO}s | "
           f"{'verboso' if verboso else 'resumido (use -v para ver as mensagens)'} ===",
           flush=True)
     print(f"Estado inicial: {estado(barragem, operadores)}", flush=True)
 
-    todos = [*lideres, *operadores, barragem]
+    # o diretório arranca primeiro: os líderes publicam as ofertas no arranque
+    todos = [diretorio, *lideres, *operadores, barragem]
     for agente in todos:
         await agente.start(auto_register=True)
-    registo.detalhe("main", "7 agentes ativos")
+    registo.detalhe("main", f"{len(todos)} agentes ativos")
     # os operadores só medem quando todos estão ativos: assim o primeiro
     # alerta nunca chega a um líder que ainda não está ligado
     for operador in operadores:
@@ -128,6 +130,9 @@ async def main(nome_cenario, verboso):
 
     print("=== Fim ===", flush=True)
     print(f"Estado final: {estado(barragem, operadores)}", flush=True)
+    print("Estoque e moeda: " + "  ".join(
+        f"{b.nome}: {sum(b.estoque.values())} recursos, moeda {b.moeda:.2f}"
+        for b in ambiente.bairros.values()), flush=True)
     print(f"Ciclos do ambiente: {ambiente.ciclo} | descargas executadas: "
           f"{barragem.descargas} (contingências: {barragem.contingencias}) | "
           f"planos rejeitados: {barragem.rejeitados}", flush=True)

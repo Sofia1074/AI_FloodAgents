@@ -90,6 +90,7 @@ def ler_descargas(pasta):
 
 
 def _grelha(ax):
+    """Põe uma grelha horizontal discreta e tira as marcas dos eixos."""
     ax.grid(axis="y", color=GRELHA, linewidth=0.8)
     ax.set_axisbelow(True)
     ax.tick_params(length=0)
@@ -255,7 +256,53 @@ def tabela_resumo(cenarios, destino):
         escritor.writerows(linhas)
 
 
+PASTA_EXP = os.path.join(PASTA, "experimentos")
+
+
+def grafico_mitigacao(destino):
+    """Nível do bairro A com e sem mitigação, nos cenários 1 e 2.
+
+    Lê o que `experimentos.py` gravou nos grupos "base" e "mitigacao".
+
+    Args:
+        destino (str): Caminho do PNG a escrever.
+    """
+    cenarios = [("risco_elevado", "Cenário 1: risco elevado"),
+                ("conflito", "Cenário 2: conflito")]
+    series = [("base", "com mitigação", COR_BAIRRO["A"]),
+              ("sem_efeito", "sem mitigação", COR_BAIRRO["B"])]
+    fig, eixos = plt.subplots(1, 2, figsize=(12, 5), sharey=True)
+    for ax, (cenario, titulo) in zip(eixos, cenarios):
+        for pasta_exp, rotulo, cor in series:
+            ciclos = ler_ciclos(os.path.join(PASTA_EXP, pasta_exp, cenario))
+            x = [l["ciclo"] for l in ciclos]
+            y = [l["nivel_A"] for l in ciclos]
+            ax.plot(x, y, color=cor, linewidth=2, label=rotulo)
+            pico = y.index(max(y))              # primeiro ciclo em que atinge o máximo
+            ax.text(x[pico], y[pico] + 2, f"máx {y[pico]:.0f}%", color=TINTA,
+                    fontsize=9, va="bottom", ha="center")
+        for limite, nome in ((50, "elevado"), (75, "crítico")):
+            ax.axhline(limite, color=EIXO, linewidth=0.9, zorder=1)
+            ax.text(x[-1] + 2.8, limite + 1.5, nome, fontsize=9, color=TINTA_FRACA,
+                    ha="right")
+        ax.set_title(titulo, loc="left", fontsize=12, color=TINTA)
+        ax.set_xlim(0, x[-1] + 3)
+        ax.set_ylim(0, 105)
+        ax.set_xlabel(f"ciclo (1 ciclo = {PERIODO_CICLO} s)")
+        _grelha(ax)
+        ax.grid(False)
+    eixos[0].set_ylabel("nível de água no bairro A (%)")
+    fig.suptitle("Efeito da mitigação no bairro A", x=0.06, ha="left", fontsize=14,
+                 color=TINTA, fontweight="semibold")
+    fig.legend(*eixos[0].get_legend_handles_labels(), loc="upper right", frameon=False,
+               ncol=2, fontsize=10, bbox_to_anchor=(0.98, 0.99), labelcolor=TINTA_2)
+    fig.savefig(destino, dpi=200, bbox_inches="tight")
+    plt.close(fig)
+
+
 def main():
+    """Gera os gráficos de cada cenário em `resultados/`, a tabela de resumo
+    e, se os experimentos já correram, o gráfico do efeito da mitigação."""
     if not os.path.isdir(PASTA):
         raise SystemExit("Não há resultados/. Corra primeiro: python main.py <cenário>")
     feitos = []
@@ -273,6 +320,9 @@ def main():
     if feitos:
         tabela_resumo(feitos, os.path.join(PASTA, "resumo_cenarios.csv"))
         print("resumo_cenarios.csv")
+    if os.path.isdir(os.path.join(PASTA_EXP, "sem_efeito")):
+        grafico_mitigacao(os.path.join(PASTA_EXP, "mitigacao.png"))
+        print("experimentos/mitigacao.png")
 
 
 if __name__ == "__main__":

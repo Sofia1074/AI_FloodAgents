@@ -199,6 +199,8 @@ class Ambiente:
     """
 
     def __init__(self, cenario):
+        """Cria o mundo com o estado inicial do cenário (os argumentos estão
+        na descrição da classe)."""
         self.ciclo = 0
         self.nivel_reservatorio = float(cenario["reservatorio"])
         self.chuva = list(cenario.get("chuva", []))

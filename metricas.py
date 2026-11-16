@@ -49,6 +49,7 @@ class Recolha:
     """
 
     def __init__(self, cenario, ambiente):
+        """Cria uma recolha vazia (os argumentos estão na descrição da classe)."""
         self.cenario = cenario
         self.ambiente = ambiente
         self.inicio = time.monotonic()
@@ -212,9 +213,16 @@ class Recolha:
     # ---- interno ---------------------------------------------------------
 
     def _agora(self):
+        """Segundos desde o início da recolha."""
         return time.monotonic() - self.inicio
 
     def _evento(self, tipo, **dados):
+        """Guarda um evento com o ciclo e o instante em que aconteceu.
+
+        Args:
+            tipo (str): Tipo do evento, como "alerta" ou "descarga".
+            **dados: Campos próprios do evento.
+        """
         self.eventos.append({"ciclo": self.ambiente.ciclo,
                              "segundos": round(self._agora(), 4),
                              "tipo": tipo, **dados})
@@ -244,6 +252,8 @@ def atual():
 
 
 def _gancho(nome):
+    """Cria a função do módulo que passa a chamada ao método `nome` da
+    recolha em curso, e não faz nada se não houver nenhuma."""
     def chamar(*args, **kwargs):
         if _atual is not None:
             getattr(_atual, nome)(*args, **kwargs)
@@ -278,6 +288,7 @@ def instalar_contador_mensagens(classe_behaviour=None):
         return
 
     async def send(self, msg):
+        """Conta a mensagem e envia-a com o `send` original do SPADE."""
         agente = getattr(getattr(self, "agent", None), "name", "?")
         mensagem(str(agente), msg.get_metadata("performative"))
         return await original(self, msg)

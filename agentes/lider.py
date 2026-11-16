@@ -1,209 +1,301 @@
-"""Agentes 3A, 3B, 3C — Líder comunitário de um bairro (agente BDI).
+"""Agentes 2A, 2B, 2C — Operador de um bairro."""
 
-O líder é um `BDIAgent` (spade_bdi). Divisão de trabalho:
-
-- `lider.asl` (AgentSpeak) decide: crenças sobre o risco e a proposta de
-  descarga, desejos e planos.
-- Este ficheiro percebe e age: os behaviours do SPADE recebem as mensagens e
-  convertem-nas em crenças; as ações `.pedir_mitigacao` e `.responder`
-  enviam as mensagens que resultam das decisões.
-"""
-
-import unicodedata
-from pathlib import Path
-
-from spade.behaviour import CyclicBehaviour
-from spade_bdi.bdi import BDIAgent
+from spade.agent import Agent
+from spade.behaviour import CyclicBehaviour, PeriodicBehaviour
 
 import mensagens
+import metricas
 import registo
-from config import PASSWORD, jid
+from config import CAPACIDADE_TANQUE, PASSWORD, PERIODO_MEDICAO, jid
 from rede import REDE
-
-FICHEIRO_ASL = str(Path(__file__).with_name("lider.asl"))
-
-
-def atomo(texto):
-    """Converte um texto num átomo do AgentSpeak (sem acentos).
-
-    Args:
-        texto (str): Por exemplo "crítico".
-
-    Returns:
-        str: Por exemplo "critico".
-    """
-    sem_acentos = unicodedata.normalize("NFKD", texto)
-    return "".join(c for c in sem_acentos if not unicodedata.combining(c))
+from risco import classificar_risco
 
 
-class CommunityLeader(BDIAgent):
-    """Agentes 3A, 3B, 3C — Líder comunitário de um bairro.
+class NeighbourhoodOperator(Agent):
+    """Agentes 2A, 2B, 2C — Operador de um bairro.
 
     Attributes:
-        nome (str): Nome do agente, como "liderA".
+        nome (str): Nome do agente, como "opA".
         bairro (str): "A", "B" ou "C".
-        rede: Quem pode comunicar com quem (rede.py).
-        risco_do_bairro (str): Último risco recebido do operador.
-        recursos_pedidos (dict): Último pedido de recursos feito ao operador.
-        propostas (dict): Propostas de descarga em análise, por id.
-        votacoes (dict): Pedidos de voto em análise, por id.
+        ambiente (Ambiente): O mundo simulado, de onde lê o nível de água.
+        tanque_livre (float): Capacidade de retenção ainda livre.
+        risco (str): "baixo", "moderado", "elevado" ou "crítico".
+        motivos (list): Agravantes do risco atual (ver risco.py).
+        ultimo_risco_enviado (str | None): Último risco que avisou ao líder.
     """
 
-    def __init__(self, nome, bairro, password=PASSWORD):
-        """Cria o líder de um bairro e carrega o seu `lider.asl` (ainda não o arranca).
+    def __init__(self, nome, bairro, ambiente, password=PASSWORD):
+        """Cria o operador de um bairro (ainda não o arranca).
 
         Args:
-            nome (str): Nome do agente, que dá o JID (por exemplo "liderA").
+            nome (str): Nome do agente, que dá o JID (por exemplo "opA").
             bairro (str): "A", "B" ou "C".
+            ambiente (Ambiente): O mundo simulado que o operador lê e altera.
             password (str): Palavra-passe no servidor XMPP.
         """
-        super().__init__(jid(nome), password, FICHEIRO_ASL)
+        super().__init__(jid(nome), password)
         self.nome = nome
         self.rede = REDE                 # quem comunica com quem
-        self.bairro = bairro
-        self.risco_do_bairro = "baixo"   # último risco recebido do operador
-        self.recursos_pedidos = {}       # bombas, barreiras, equipa...
-        self.propostas = {}              # id -> proposta da barragem
-        self.votacoes = {}               # id -> pedido de voto da barragem
-        self._seq_propostas = 0
+        self.bairro = bairro             # "A", "B" ou "C"
+        self.ambiente = ambiente         # mundo simulado (ambiente.py)
+        self.tanque_livre = CAPACIDADE_TANQUE   # capacidade de retenção disponível
+        self.risco = "baixo"             # baixo, moderado, elevado ou crítico
+        self.motivos = []                # agravantes do risco (ver risco.py)
+        self.ultimo_risco_enviado = None # para só alertar quando há novidade
+        self.subida_rapida_avisada = False
 
-    def add_custom_actions(self, actions):
-        """Regista as ações que o `lider.asl` pode chamar.
-
-        Args:
-            actions: Conjunto de ações do AgentSpeak, preenchido aqui.
-        """
-        actions.add_procedure(
-            ".registar", (str,),
-            lambda texto: registo.detalhe(self.nome, texto))
-        actions.add_procedure(
-            ".pedir_mitigacao", (tuple,),
-            lambda pedido: self.pedir_mitigacao(
-                {str(p.args[0]): int(p.args[1]) for p in pedido}))
-        actions.add_procedure(
-            ".responder", (int, None, float),
-            lambda id_proposta, decisao, caudal: self.responder(
-                id_proposta, str(decisao), caudal))
-        actions.add_procedure(
-            ".votar", (int, None),
-            lambda id_voto, voto: self.votar(id_voto, str(voto)))
-
-    class OuvirMensagens(CyclicBehaviour):
-        """Recebe alertas do operador do bairro e propostas da barragem e
-        transforma-os em crenças do agente BDI."""
+    class Monitorizar(PeriodicBehaviour):
+        """De tempos a tempos: mede, avalia o risco e alerta o líder."""
 
         async def run(self):
-            """Espera uma mensagem e converte-a numa crença do `lider.asl`
-            (`risco`, `proposta`, `votacao` ou `contingencia`), que dispara os
-            planos de decisão."""
-            lider = self.agent
+            """Uma medição: lê o bairro, avalia o risco e, se o risco mudou ou
+            começou uma subida rápida, envia o alerta ao líder (só então)."""
+            op = self.agent
+            op.medir()
+            op.avaliar_risco()
+
+            # só alerta quando há novidade: o risco mudou desde o último
+            # alerta, ou começou uma subida rápida (secção 3 do guia)
+            subida_rapida = "subida rápida" in op.motivos
+            nova_subida = subida_rapida and not op.subida_rapida_avisada
+            op.subida_rapida_avisada = subida_rapida
+            if op.risco == op.ultimo_risco_enviado and not nova_subida:
+                return
+            lider = f"lider{op.bairro}"
+            if not op.rede.pode_comunicar(op.nome, lider):
+                return
+
+            await self.send(mensagens.criar(
+                lider, mensagens.INFORM, mensagens.ALERTA_RISCO, "alerta_risco",
+                **op.alertar_lider()))
+            anterior = op.ultimo_risco_enviado
+            op.ultimo_risco_enviado = op.risco
+            metricas.alerta(op.bairro, op.risco)
+            motivos = f", {', '.join(op.motivos)}" if op.motivos else ""
+            dados = (f"(nível {op.nivel_agua:.1f}, a subir "
+                     f"{op.velocidade_subida:+.1f}/ciclo{motivos})")
+            if anterior is None and op.risco == "baixo" and not op.motivos:
+                registo.detalhe(op.nome, "primeira leitura: risco baixo")
+            elif anterior is None:
+                registo.evento("ALERTA", f"bairro {op.bairro}: risco {op.risco} {dados}")
+            elif anterior == op.risco:
+                registo.evento("ALERTA", f"bairro {op.bairro}: subida rápida, risco "
+                                         f"continua {op.risco} {dados}")
+            else:
+                registo.evento("ALERTA", f"bairro {op.bairro}: {anterior} -> "
+                                         f"{op.risco} {dados}")
+
+    class OuvirMensagens(CyclicBehaviour):
+        """Recebe: pedidos de mitigação e de execução de serviços do líder, e
+        avisos de descarga da barragem."""
+
+        async def run(self):
+            """Espera uma mensagem e trata-a conforme o tipo. Os pedidos do
+            líder recebem sempre duas respostas: primeiro AGREE ou REFUSE,
+            depois (se aceitou) INFORM ou FAILURE."""
+            op = self.agent
             msg = mensagens.ler(await self.receive(timeout=1))
             if msg is None:
                 return
+            conteudo = msg.corpo
 
-            if msg.tipo == "alerta_risco":
-                lider.risco_do_bairro = msg.corpo["risco"]
-                lider.bdi.set_belief("risco", atomo(msg.corpo["risco"]))
-
-            elif msg.tipo == "proposta_descarga":
-                if not lider.rede.pode_comunicar(lider.nome, "barragem"):
-                    return
-                lider._seq_propostas += 1
-                id_proposta = lider._seq_propostas
-                lider.propostas[id_proposta] = msg      # guarda o thread para responder
-                lider.bdi.set_belief("proposta", id_proposta,
-                                     float(msg.corpo["caudal"]))
-
-            elif msg.tipo == "pedido_voto":
-                if not lider.rede.pode_comunicar(lider.nome, "barragem"):
-                    return
-                lider._seq_propostas += 1
-                id_voto = lider._seq_propostas
-                lider.votacoes[id_voto] = msg           # guarda o thread para votar
-                lider.bdi.set_belief("votacao", id_voto, float(msg.corpo["caudal"]))
-
-            elif msg.tipo == "aviso_contingencia":
-                # a barragem decidiu sozinha: o líder fica a saber (crença) e o
-                # plano do .asl regista-o
-                lider.bdi.set_belief("contingencia", float(msg.corpo["caudal"]))
+            if msg.tipo == "pedido_mitigacao":
+                for resposta in op.tratar_pedido_mitigacao(msg):
+                    await self.send(resposta)
+            elif msg.tipo == "executar_servico":
+                for resposta in op.tratar_execucao_servico(msg):
+                    await self.send(resposta)
+            elif msg.tipo == "aviso_descarga":
+                # só um aviso: a água da descarga chega pelo ambiente
+                registo.detalhe(op.nome, f"aviso de descarga (caudal "
+                                f"{conteudo['caudal']}, duração {conteudo['duracao']})")
 
     async def setup(self):
-        """Arranca o behaviour que traduz mensagens em crenças.
+        """Arranca o behaviour que escuta o líder e a barragem. A monitorização
+        só começa em `comecar()`, quando todos os agentes estão ativos."""
+        registo.detalhe(self.nome, f"agente ativo (bairro {self.bairro})")
+        # a monitorização só arranca em comecar(), quando todos os agentes
+        # estiverem ativos (ver comecar)
+        # só recebe pedidos do líder (mitigação e serviços contratados) e
+        # avisos de descarga da barragem
+        pedidos = (mensagens.template(mensagens.PEDIR_MITIGACAO, mensagens.REQUEST)
+                   | mensagens.template(mensagens.EXECUTAR_SERVICO, mensagens.REQUEST)
+                   | mensagens.template(mensagens.NEGOCIAR_DESCARGA, mensagens.INFORM))
+        self.add_behaviour(self.OuvirMensagens(), pedidos)
 
-        O template deixa passar só os alertas dos operadores, as propostas e
-        os avisos de contingência da barragem (negociação) e os pedidos de voto."""
-        registo.detalhe(self.nome, f"agente BDI ativo (bairro {self.bairro})")
-        recebe = (mensagens.template(mensagens.ALERTA_RISCO, mensagens.INFORM)
-                  | mensagens.template(mensagens.NEGOCIAR_DESCARGA, mensagens.PROPOSE,
-                                       mensagens.INFORM)
-                  | mensagens.template(mensagens.VOTACAO, mensagens.PROPOSE))
-        self.add_behaviour(self.OuvirMensagens(), recebe)
+    def comecar(self):
+        """Arranca a monitorização do bairro.
 
-    def pedir_mitigacao(self, recursos):
-        """Pede ao operador do bairro que ative recursos (ação `.pedir_mitigacao`).
+        Chamado pelo `main` depois de **todos** os agentes estarem ativos.
+        Se o operador medisse logo no arranque, o primeiro alerta podia sair
+        antes de o líder estar ligado ao servidor e perder-se (e o operador
+        só volta a alertar quando o risco muda). Assim o resultado não depende
+        da ordem em que os agentes arrancam.
+        """
+        self.add_behaviour(self.Monitorizar(period=PERIODO_MEDICAO))
+
+    @property
+    def nivel_agua(self):
+        """Nível de água do bairro, lido do ambiente (sensor simulado)."""
+        return self.ambiente.bairros[self.bairro].nivel
+
+    @property
+    def velocidade_subida(self):
+        """Quanto o nível subiu no último ciclo do ambiente."""
+        return self.ambiente.bairros[self.bairro].velocidade
+
+    def medir(self):
+        """Lê os sensores do bairro.
+        O nível de água vem do ambiente; aqui calcula-se o que se deduz
+        dele: a capacidade de retenção livre.
+
+        Returns:
+            tuple: (nível de água, capacidade de retenção livre).
+        """
+        self.tanque_livre = max(0.0, CAPACIDADE_TANQUE - self.nivel_agua)
+        return self.nivel_agua, self.tanque_livre
+
+    def avaliar_risco(self):
+        """Calcula o nível de risco a partir das medições: nível, velocidade
+        de subida, chuva e capacidade de drenagem (regras em risco.py).
+        Guarda os agravantes em `self.motivos`.
+
+        Returns:
+            str: "baixo", "moderado", "elevado" ou "crítico".
+        """
+        b = self.ambiente.bairros[self.bairro]
+        self.risco, self.motivos = classificar_risco(
+            nivel=b.nivel,
+            velocidade=b.velocidade,
+            entrada_chuva=b.entrada_chuva(self.ambiente.chuva_ultimo_ciclo),
+            drenagem=b.drenagem_natural(),
+        )
+        return self.risco
+
+    def alertar_lider(self):
+        """Prepara o alerta com o risco e os dados, para enviar ao líder
+        do bairro (o envio é feito pelo behaviour Monitorizar).
+
+        Returns:
+            dict: Bairro, risco, nível de água, velocidade de subida, motivos
+            e capacidade de retenção livre.
+        """
+        return {
+            "bairro": self.bairro,
+            "risco": self.risco,
+            "nivel_agua": self.nivel_agua,
+            "velocidade_subida": self.velocidade_subida,
+            "motivos": self.motivos,
+            "tanque_livre": self.tanque_livre,
+        }
+
+    @property
+    def estado(self):
+        """O bairro no ambiente: nível, estoque, reservas e moeda."""
+        return self.ambiente.bairros[self.bairro]
+
+    def ativar_mitigacao(self, recursos):
+        """Liga bombas, barreiras ou equipas no bairro, gastando o estoque.
+        O efeito acontece no ambiente ao longo dos ciclos seguintes
+        (ver EFEITO_RECURSO em config.py).
 
         Args:
             recursos (dict): Quantidade por recurso, como {"bombas": 2}.
-        """
-        destino = f"op{self.bairro}"
-        if not recursos or not self.rede.pode_comunicar(self.nome, destino):
-            return
-        self.recursos_pedidos = recursos
-        self.submit(self.bdi.send(mensagens.criar(
-            destino, mensagens.REQUEST, mensagens.PEDIR_MITIGACAO,
-            "pedido_mitigacao", recursos=recursos)))
-        registo.detalhe(self.nome, f"risco {self.risco_do_bairro}: "
-                                   f"pediu recursos {recursos}")
 
-    def responder(self, id_proposta, decisao, caudal):
-        """Responde à barragem (ação `.responder`).
+        Returns:
+            bool: True se ativou, False se o estoque livre não chegava
+            (nesse caso não gasta nada).
+        """
+        if not self.estado.gastar(recursos):
+            return False
+        self.ambiente.aplicar_mitigacao(self.bairro, recursos)
+        return True
+
+    def tratar_pedido_mitigacao(self, msg):
+        """Protocolo PedirMitigacao, do lado do ExecutorLocal.
+
+        O operador controla o estoque físico (secção 2.1 do guia): só ativa o
+        que o estoque livre (estoque - reservado) cobre. As unidades
+        reservadas a contratos de venda não se usam.
+
+        - Nada disponível: REFUSE "mitigacao_recusada" com o que falta.
+        - Algo disponível: AGREE "mitigacao_aceite" e, depois de ativar,
+          INFORM "mitigacao_ativada" (com o que ativou e o que falta), ou
+          FAILURE "mitigacao_falhou" se o estoque mudou entretanto.
 
         Args:
-            id_proposta (int): Proposta em análise.
-            decisao (str): "aceita", "contraproposta" ou "rejeita".
-            caudal (float): O limite do bairro, usado na contraproposta.
+            msg (mensagens.Recebida): REQUEST "pedido_mitigacao" com `recursos`.
+
+        Returns:
+            list: As respostas a enviar ao líder, pela ordem.
         """
-        proposta = self.propostas.pop(id_proposta, None)
-        if proposta is None or not self.rede.pode_comunicar(self.nome, "barragem"):
-            return
-        aceita = decisao == "aceita"
-        contraproposta = None
-        if decisao == "contraproposta":
-            # o plano da barragem, com o caudal que o bairro aguenta
-            contraproposta = {c: proposta.corpo[c] for c in ("atraso", "duracao")
-                              if c in proposta.corpo}
-            contraproposta["caudal"] = caudal
-        # a resposta leva o thread e o id da proposta, para a barragem a associar
-        # à negociação e à rodada certas
-        self.submit(self.bdi.send(mensagens.criar(
-            "barragem",
-            mensagens.ACCEPT_PROPOSAL if aceita else mensagens.REJECT_PROPOSAL,
-            mensagens.NEGOCIAR_DESCARGA, "resposta_proposta",
-            thread=proposta.thread, id_proposta=proposta.corpo.get("id_proposta"),
-            rodada=proposta.corpo.get("rodada"),
-            aceita=aceita, contraproposta=contraproposta)))
-        registo.detalhe(self.nome, f"{'aceitou' if aceita else 'recusou'} o plano "
-                                   f"(risco {self.risco_do_bairro}); contraproposta "
-                                   f"{contraproposta}")
+        pedido = {r: int(q) for r, q in msg.corpo.get("recursos", {}).items()}
+        ativar, falta = self.estado.separar_pedido(pedido)
 
-    def votar(self, id_voto, voto):
-        """Vota a proposta final da barragem (ação `.votar`).
+        def resposta(performativa, tipo, **dados):
+            """Resposta ao líder, no mesmo protocolo e conversa do pedido."""
+            return mensagens.criar(msg.remetente, performativa,
+                                   mensagens.PEDIR_MITIGACAO, tipo,
+                                   thread=msg.thread, bairro=self.bairro, **dados)
 
-        Num voto só há sim ou não: não se negoceia.
+        if not ativar:
+            registo.evento("MITIGAÇÃO", f"bairro {self.bairro}: sem estoque para "
+                                        f"{pedido} (recusado)")
+            return [resposta(mensagens.REFUSE, "mitigacao_recusada",
+                             motivo="sem estoque", falta=falta)]
+
+        respostas = [resposta(mensagens.AGREE, "mitigacao_aceite",
+                              recursos=ativar, falta=falta)]
+        if not self.ativar_mitigacao(ativar):
+            respostas.append(resposta(mensagens.FAILURE, "mitigacao_falhou",
+                                      motivo="o estoque mudou", falta=pedido))
+            return respostas
+        metricas.mitigacao(self.bairro, ativar)
+        em_falta = f", faltam {falta}" if falta else ""
+        registo.evento("MITIGAÇÃO", f"bairro {self.bairro}: {ativar} ativados "
+                                    f"(nível {self.nivel_agua:.1f}{em_falta})")
+        respostas.append(resposta(mensagens.INFORM, "mitigacao_ativada",
+                                  recursos=ativar, falta=falta,
+                                  estoque=dict(self.estado.estoque)))
+        return respostas
+
+    def tratar_execucao_servico(self, msg):
+        """Protocolo ExecutarServico: usa recursos reservados num contrato.
+
+        O líder fornecedor já reservou as unidades (Contract Net). O operador
+        gasta essa reserva e ativa os recursos no bairro comprador (a única
+        vez em que um papel mexe noutro bairro, ver modelo Gaia). Responde
+        AGREE e depois INFORM "servico_executado" ou FAILURE "servico_falhou".
 
         Args:
-            id_voto (int): Pedido de voto em análise.
-            voto (str): "sim" ou "nao".
+            msg (mensagens.Recebida): REQUEST "executar_servico" com
+                `servico`, `quantidade` e `destino`.
+
+        Returns:
+            list: As respostas a enviar ao líder, pela ordem.
         """
-        pedido = self.votacoes.pop(id_voto, None)
-        if pedido is None or not self.rede.pode_comunicar(self.nome, "barragem"):
-            return
-        aceita = voto == "sim"
-        # o voto leva o thread e o id da proposta votada: um voto por negociação
-        self.submit(self.bdi.send(mensagens.criar(
-            "barragem",
-            mensagens.ACCEPT_PROPOSAL if aceita else mensagens.REJECT_PROPOSAL,
-            mensagens.VOTACAO, "voto", thread=pedido.thread,
-            id_proposta=pedido.corpo.get("id_proposta"), aceita=aceita)))
-        registo.detalhe(self.nome, f"votou {'sim' if aceita else 'não'} "
-                                   f"(risco {self.risco_do_bairro})")
+        c = msg.corpo
+        servico, quantidade, destino = c.get("servico"), int(c.get("quantidade", 0)), c.get("destino")
+
+        def resposta(performativa, tipo, **dados):
+            """Resposta ao líder, no mesmo protocolo e conversa do pedido."""
+            return mensagens.criar(msg.remetente, performativa,
+                                   mensagens.EXECUTAR_SERVICO, tipo, thread=msg.thread,
+                                   servico=servico, quantidade=quantidade,
+                                   destino=destino, **dados)
+
+        respostas = [resposta(mensagens.AGREE, "execucao_aceite")]
+        if destino not in self.ambiente.bairros or destino == self.bairro:
+            respostas.append(resposta(mensagens.FAILURE, "servico_falhou",
+                                      motivo="bairro de destino inválido"))
+            return respostas
+        if not self.estado.gastar_reserva(servico, quantidade):
+            respostas.append(resposta(mensagens.FAILURE, "servico_falhou",
+                                      motivo="recurso não reservado"))
+            return respostas
+        self.ambiente.aplicar_mitigacao(destino, {servico: quantidade})
+        metricas.mitigacao(destino, {servico: quantidade})
+        registo.evento("SERVIÇO", f"bairro {self.bairro} levou {servico} x{quantidade} "
+                                  f"ao bairro {destino}")
+        respostas.append(resposta(mensagens.INFORM, "servico_executado"))
+        return respostas

@@ -3,7 +3,10 @@ Sistema multiagente descentralizado de alerta precoce e resposta a inundações
 urbanas, em Python com SPADE.
 Sistemas Autónomos e Inteligentes (ISIA), 2026/27.
 
-Grupo: (preencher com os nomes e números dos elementos)
+Grupo:
+  Telma Freitas, up202301622
+  Ana Sofia Quintero, up202300906
+  Yunnie Zita, up202309709
 
 
 1. O QUE É

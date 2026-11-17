@@ -5,6 +5,14 @@ PASSWORD = "password"
 
 
 def jid(nome):
+    """Devolve o JID (endereço XMPP) de um agente.
+
+    Args:
+        nome (str): Nome do agente, como "liderA".
+
+    Returns:
+        str: O endereço, como "liderA@localhost".
+    """
     return f"{nome}@{DOMINIO}"
 
 

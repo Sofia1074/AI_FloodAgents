@@ -94,7 +94,11 @@ mostra o estado final e as métricas, e grava-as em resultados/<cenário>/
 
 5. OUTROS COMANDOS
 
-    python -m unittest discover -s tests       testes automáticos (134)
+    python -m unittest discover -s tests       testes automáticos (135)
+
+    python gerar_docs.py                       documentação do código em HTML
+                                               (docs/html/index.html), a partir
+                                               das docstrings, com o pdoc
 
     python graficos.py                         gráficos dos cenários em
                                                resultados/<cenário>/ (PNG);
@@ -125,6 +129,7 @@ Os experimentos correm o mesmo cenário mudando um parâmetro de cada vez
   metricas.py        recolha das métricas de avaliação
   graficos.py        gráficos dos resultados
   experimentos.py    experimentos comparativos
+  gerar_docs.py      gera a documentação HTML (docs/html) com o pdoc
   registo.py         saída do terminal
   agentes/           barragem.py, operador.py, lider.py (com lider.asl, a parte
                      BDI em AgentSpeak), diretorio.py e contract_net.py

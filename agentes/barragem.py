@@ -215,6 +215,7 @@ async def executar_contingencia(comportamento, motivo):
     dam.executar_descarga(plano)
     dam.descargas += 1
     dam.contingencias += 1
+    metricas.contingencia(plano["caudal"], motivo)
     metricas.descarga(plano["caudal"], plano["duracao"])
     registo.evento(
         "CONTINGÊNCIA",

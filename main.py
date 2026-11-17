@@ -80,7 +80,8 @@ def mostrar_metricas(r):
           f"decisão média {decisao}", flush=True)
     print(f"          propostas {p['total']} (aprovadas {p['aprovadas']}, rejeitadas "
           f"na votação {p['rejeitadas_votacao']}, por segurança "
-          f"{p['rejeitadas_seguranca']}) | recursos {r['recursos']['total'] or '-'} | "
+          f"{p['rejeitadas_seguranca']}) | descargas {p['descargas']} "
+          f"(contingência {p['contingencias']}) | recursos {r['recursos']['total'] or '-'} | "
           f"transações {r['transacoes']['total']}", flush=True)
 
 

@@ -277,6 +277,7 @@ def tabela_resumo(cenarios, destino):
             "aprovadas": r["propostas"]["aprovadas"],
             "rejeitadas_votacao": r["propostas"]["rejeitadas_votacao"],
             "rejeitadas_seguranca": r["propostas"]["rejeitadas_seguranca"],
+            "contingencias": r["propostas"].get("contingencias", 0),
             "decisao_media_ms": round(1000 * sum(tempos) / len(tempos)) if tempos else "",
             "recursos_usados": sum(r["recursos"]["total"].values()),
             "transacoes": r["transacoes"]["total"],

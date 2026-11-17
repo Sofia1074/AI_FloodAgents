@@ -6,16 +6,18 @@ Métricas recolhidas:
   (calculado no ambiente com as regras de risco.py) e o operador alertar;
 - mensagens trocadas, por performativa;
 - tempo até à decisão coletiva: segundos entre a proposta da barragem e o
-  resultado da votação;
+  resultado da votação (medido com `time.perf_counter`: no Windows o
+  `time.monotonic` só tem resolução de 15,6 ms e dava 0 ms);
 - utilização dos recursos de mitigação, por bairro;
 - evolução do risco: nível, velocidade e risco de cada bairro em cada ciclo;
-- propostas aprovadas, rejeitadas na votação e rejeitadas por segurança;
+- propostas aprovadas, rejeitadas na votação e rejeitadas por segurança, e
+  descargas de contingência (que não passam por proposta nem votação);
 - transações entre bairros e preços negociados.
 
 Uso: `main.py` chama `iniciar()` no arranque, `registar_ciclo()` a cada passo
 do ambiente e `exportar()` no fim. Os agentes chamam os ganchos (`alerta`,
 `mitigacao`, `proposta`, `decisao`, `rejeitada_seguranca`, `descarga`,
-`transacao`). Sem `iniciar()` os ganchos não fazem nada, por isso os agentes
+`contingencia`, `transacao`). Sem `iniciar()` os ganchos não fazem nada, por isso os agentes
 funcionam também fora de uma simulação (por exemplo, nos testes).
 
 As mensagens contam-se sem mexer nos agentes: `instalar_contador_mensagens()`
@@ -57,7 +59,7 @@ class Recolha:
         """
         self.cenario = cenario
         self.ambiente = ambiente
-        self.inicio = time.monotonic()
+        self.inicio = time.perf_counter()
         self.ciclos = []                 # uma linha (dict) por ciclo
         self.eventos = []                # um dict por evento
         self.inicio_risco_real = {}      # bairro -> 1.º ciclo em risco elevado
@@ -156,6 +158,15 @@ class Recolha:
         """
         self._evento("descarga", caudal=caudal, duracao=duracao)
 
+    def contingencia(self, caudal, motivo):
+        """A barragem aplicou a contingência (descarga sem proposta nem votação).
+
+        Args:
+            caudal (float): Caudal libertado.
+            motivo (str): Porque se aplicou, como "sem acordo" ou "emergência".
+        """
+        self._evento("contingencia", caudal=caudal, motivo=motivo)
+
     def transacao(self, comprador, fornecedor, servico, quantidade, preco):
         """Um contrato entre bairros foi pago (Contract Net).
 
@@ -226,6 +237,7 @@ class Recolha:
                 "rejeitadas_votacao": sum(1 for e in decisoes if not e["aprovado"]),
                 "rejeitadas_seguranca": len(por_tipo.get("rejeitada_seguranca", [])),
                 "descargas": len(por_tipo.get("descarga", [])),
+                "contingencias": len(por_tipo.get("contingencia", [])),
             },
             "recursos": {"total": dict(total_recursos),
                          "por_bairro": {b: dict(c) for b, c in recursos_bairro.items()}},
@@ -269,7 +281,7 @@ class Recolha:
 
     def _agora(self):
         """Segundos desde o início da recolha."""
-        return time.monotonic() - self.inicio
+        return time.perf_counter() - self.inicio
 
     def _evento(self, tipo, **dados):
         """Guarda um evento com o ciclo e o instante em que aconteceu.
@@ -339,6 +351,7 @@ proposta = _gancho("proposta")
 decisao = _gancho("decisao")
 rejeitada_seguranca = _gancho("rejeitada_seguranca")
 descarga = _gancho("descarga")
+contingencia = _gancho("contingencia")
 transacao = _gancho("transacao")
 
 

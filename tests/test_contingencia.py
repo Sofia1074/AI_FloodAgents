@@ -114,6 +114,22 @@ class TestExecutarContingencia(unittest.TestCase):
         tipos = sorted(m.body.split('"tipo": "')[1].split('"')[0] for m in enviadas)
         self.assertEqual(tipos, ["aviso_contingencia"] * 3 + ["aviso_descarga"] * 3)
 
+    def test_fica_registada_nas_metricas_como_contingencia(self):
+        import metricas
+
+        class AmbienteDasMetricas:
+            ciclo = 0
+            bairros = {}
+
+        recolha = metricas.iniciar("teste", AmbienteDasMetricas())
+        try:
+            self.correr(barragem(96.0), "emergência")
+            r = recolha.resumo()["propostas"]
+        finally:
+            metricas.terminar()
+        self.assertEqual((r["contingencias"], r["descargas"], r["total"]), (1, 1, 0))
+        self.assertEqual(recolha.eventos[0]["motivo"], "emergência")
+
     def test_nao_aplica_com_outra_descarga_em_curso(self):
         dam = barragem(96.0, ativa=True)
         self.assertEqual(self.correr(dam), [])

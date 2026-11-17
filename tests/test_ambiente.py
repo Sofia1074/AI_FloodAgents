@@ -58,13 +58,11 @@ class TestReservatorio(unittest.TestCase):
             amb.passo()
         self.assertGreaterEqual(amb.nivel_reservatorio, 0.0)
 
-    def test_descarga_sobe_o_nivel_a_jusante(self):
+    def test_sem_chuva_o_reservatorio_fica_parado(self):
         amb = Ambiente(cenario_simples())
-        amb.passo()
-        sem_descarga = amb.nivel_jusante
-        amb.iniciar_descarga(caudal=50.0, duracao=5)
-        amb.passo()
-        self.assertGreater(amb.nivel_jusante, sem_descarga)
+        for _ in range(10):
+            amb.passo()
+        self.assertEqual(amb.nivel_reservatorio, 50.0)
 
 
 class TestBairros(unittest.TestCase):

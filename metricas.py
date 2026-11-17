@@ -72,7 +72,6 @@ class Recolha:
             "reservatorio": round(amb.nivel_reservatorio, 2),
             "caudal_entrada": round(amb.caudal_entrada, 2),
             "caudal_saida": round(amb.caudal_saida, 2),
-            "nivel_jusante": round(amb.nivel_jusante, 3),
         }
         for nome, b in amb.bairros.items():
             risco, _ = classificar_risco(

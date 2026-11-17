@@ -112,6 +112,11 @@ mostra o estado final e as métricas, e grava-as em resultados/<cenário>/
                                                resultados/experimentos/
                                                comparacao.csv
 
+    python gerar_docs.py                       gera a documentação HTML
+                                               em docs/html/ (abrir
+                                               index.html). Repetir depois
+                                               de mudar docstrings
+
 Os experimentos correm o mesmo cenário mudando um parâmetro de cada vez
 (por exemplo, a mitigação sem efeito) e comparam as métricas.
 

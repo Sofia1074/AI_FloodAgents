@@ -1,0 +1,11 @@
+experimento,cenario,mensagens,alertas,deteccao_media_s,votacoes_aprovadas,votacoes_rejeitadas,descargas,recursos_usados,transacoes,nivel_max_A,nivel_max_B,nivel_max_C,ciclos_em_risco_elevado
+base,conflito,50,13,4.0,1,0,1,20,0,62.8,37.2,35.0,24
+1 rodada,conflito,50,13,4.0,1,0,1,20,0,62.8,37.2,35.0,24
+medir a cada 5 s,conflito,64,17,1.0,1,0,1,19,0,55.0,22.5,35.0,8
+sem efeito,conflito,74,11,2.7,1,0,1,19,0,100.0,49.2,57.0,56
+base,recursos_limitados,33,7,0.0,0,0,0,4,1,19.1,50.0,9.4,9
+base,risco_elevado,27,11,4.0,0,0,0,12,0,57.5,28.0,19.6,10
+limiar 3,risco_elevado,27,11,4.0,0,0,0,12,0,57.5,28.0,19.6,10
+limiar 6,risco_elevado,27,11,4.0,0,0,0,12,0,57.5,28.0,19.6,10
+medir a cada 5 s,risco_elevado,28,12,4.0,0,0,0,7,0,47.5,24.0,19.6,8
+sem efeito,risco_elevado,29,11,4.0,0,0,0,15,0,73.2,30.0,21.1,23

@@ -135,7 +135,9 @@ Os experimentos correm o mesmo cenário mudando um parâmetro de cada vez
                      BDI em AgentSpeak), diretorio.py e contract_net.py
   tests/             testes automáticos
   docs/              documentação do código (HTML gerado das docstrings, em
-                     docs/html/index.html) e notas de desenho
+                     docs/html/index.html), notas de desenho e os
+                     resultados dos experimentos usados na apresentação
+                     (docs/experimentos/comparacao.csv e mitigacao.png)
 
 
 7. NOTAS

@@ -6,8 +6,8 @@
 # No Windows, depois, remover o winloop (dá erros com o SPADE):
 #     python -m pip uninstall winloop
 #
-# Bibliotecas que o código usa: spade, spade_bdi (agentes) e matplotlib
-# (só o graficos.py). As restantes são dependências delas.
+# Bibliotecas que o código usa: spade, spade_bdi (agentes), matplotlib
+# (só o graficos.py) e pdoc (só o gerar_docs.py). As restantes são dependências delas.
 
 agentspeak==0.2.2
 greenlet==3.5.6  # o servidor XMPP embutido precisa dele; o SQLAlchemy 2.1 não o instala sozinho
@@ -37,6 +37,7 @@ kiwisolver==1.5.1
 loguru==0.8.0
 Mako==1.4.3
 markdown-it-py==4.3.0
+markdown2==2.5.5
 MarkupSafe==3.0.4
 matplotlib==3.10.1
 mdurl==0.1.2
@@ -44,6 +45,7 @@ multidict==7.2.1
 nanoid==2.0.0
 numpy==2.5.5
 packaging==26.2
+pdoc==16.0.0
 pillow==13.0.0
 propcache==0.5.4
 pyasn1==0.6.5

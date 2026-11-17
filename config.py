@@ -5,6 +5,14 @@ PASSWORD = "password"
 
 
 def jid(nome):
+    """Devolve o JID (endereço XMPP) de um agente.
+
+    Args:
+        nome (str): Nome do agente, como "liderA".
+
+    Returns:
+        str: O endereço, como "liderA@localhost".
+    """
     return f"{nome}@{DOMINIO}"
 
 
@@ -45,12 +53,10 @@ PROTECAO_MAXIMA = 0.9              # as barreiras nunca bloqueiam toda a água
 
 # Parâmetros do ambiente (ambiente.py). Modelo aproximado, ver limitações lá.
 PERIODO_CICLO = 2                  # segundos entre dois passos do ambiente
-CAUDAL_BASE_ENTRADA = 8.0          # caudal que entra no reservatório sem chuva
-AREA_BACIA = 3.0                   # caudal de entrada extra por mm de chuva
-                                   # (com 4 mm entram 20 por ciclo; as descargas
-                                   # propostas, de 25 a 60, passam a baixar o nível)
-NIVEL_JUSANTE_BASE = 1.0           # nível do rio a jusante sem descarga (m)
-FATOR_JUSANTE = 0.02               # metros a mais a jusante por unidade de caudal
+AREA_BACIA = 3.0                   # caudal que entra no reservatório por mm de chuva
+                                   # (sem chuva não entra nada; com 4 mm entram 12
+                                   # por ciclo e as descargas propostas passam a
+                                   # baixar o nível)
 HUMIDADE_POR_MM = 0.02             # quanto a humidade do solo sobe por mm de chuva
 SECAGEM_SOLO = 0.02                # quanto a humidade desce por ciclo
 PERDA_DRENAGEM_SOLO = 0.5          # com o solo encharcado a drenagem cai até metade

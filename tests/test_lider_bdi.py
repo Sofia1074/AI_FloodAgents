@@ -17,7 +17,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import CAUDAL_ACEITE, RECURSOS_POR_RISCO  # noqa: E402
 
 try:
-    from agentes.lider import FICHEIRO_ASL, CommunityLeader, atomo
+    import mensagens
+    from agentes.lider import (FICHEIRO_ASL, CommunityLeader, atomo,
+                               templates_do_lider)
     TEM_BDI = True
 except Exception:      # spade ou spade_bdi indisponíveis
     TEM_BDI = False
@@ -115,6 +117,31 @@ class TestLiderBDI(unittest.TestCase):
         avancar(lider)
         self.assertIn("contingencia", lider.bdi.get_belief("contingencia"))
         self.assertEqual(lider.votos, [])           # o líder só fica a saber
+
+    def test_todas_as_mensagens_que_chegam_ao_lider_tem_behaviour(self):
+        """Uma mensagem sem behaviour faz o SPADE escrever "No behaviour matched
+        for message" no terminal. Aqui estão as que os outros agentes enviam ao
+        líder (performativa, protocolo); se um agente passar a enviar uma nova,
+        acrescenta-se aqui e em `templates_do_lider`."""
+        recebidas = [
+            ("inform", "alerta-risco"),                         # operador
+            ("agree", "pedir-mitigacao"), ("refuse", "pedir-mitigacao"),
+            ("inform", "pedir-mitigacao"), ("failure", "pedir-mitigacao"),
+            ("agree", "gerir-oferta"), ("refuse", "gerir-oferta"),    # diretório
+            ("propose", "negociar-descarga"),                   # barragem
+            ("inform", "negociar-descarga"),                    # contingência
+            ("propose", "votacao"),
+            ("cfp", "contract-net"), ("propose", "contract-net"),     # outros líderes
+            ("accept-proposal", "contract-net"),
+            ("reject-proposal", "contract-net"), ("inform", "contract-net"),
+            ("agree", "executar-servico"), ("inform", "executar-servico"),
+            ("failure", "executar-servico"),                    # operador
+        ]
+        recebe, fornece = templates_do_lider()
+        for performativa, protocolo in recebidas:
+            msg = mensagens.criar("liderA", performativa, protocolo, "teste")
+            self.assertTrue(recebe.match(msg) or fornece.match(msg),
+                            f"sem behaviour: {performativa} em {protocolo}")
 
     def test_textos_do_asl_sem_acentos(self):
         """O spade_bdi lê o .asl com a codificação do sistema: um acento dentro

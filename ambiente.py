@@ -1,4 +1,4 @@
-"""Ambiente simulado: barragem, rio a jusante e os três bairros.
+"""Ambiente simulado: barragem e os três bairros.
 
 O ambiente não é um agente. É o "mundo" que os agentes observam e alteram:
 os operadores leem o nível de água do seu bairro, a barragem define o caudal
@@ -8,13 +8,13 @@ de descarga e a mitigação (bombas, barreiras, equipas) muda a forma como a
 O estado inicial vem de um cenário (cenarios.py). A cada ciclo, `passo()`
 aplica as regras abaixo, por esta ordem:
 
-1. A chuva do ciclo define o caudal de entrada no reservatório.
+1. A chuva do ciclo define o caudal de entrada no reservatório (sem chuva
+   não entra água: o reservatório fica parado).
 2. O reservatório sobe com a entrada e desce com a descarga em curso.
-3. O nível a jusante acompanha o caudal de descarga.
-4. Em cada bairro a água sobe com a chuva (mais com o solo encharcado) e com
+3. Em cada bairro a água sobe com a chuva (mais com o solo encharcado) e com
    a parte da descarga que lhe chega, e desce com a drenagem.
-5. A humidade do solo sobe com a chuva e desce devagar sem ela.
-6. Os efeitos temporários dos recursos de mitigação perdem um ciclo.
+4. A humidade do solo sobe com a chuva e desce devagar sem ela.
+5. Os efeitos temporários dos recursos de mitigação perdem um ciclo.
 
 Limitações (o guia pede que fiquem documentadas):
 
@@ -23,8 +23,9 @@ Limitações (o guia pede que fiquem documentadas):
   plausível, não para prever inundações.
 - A descarga chega a todos os bairros no mesmo ciclo, sem tempo de
   propagação no rio.
-- O nível do bairro está em percentagem da capacidade de retenção (0 a 100);
-  o nível a jusante está em metros, mas só serve de indicador.
+- O nível do bairro está em percentagem da capacidade de retenção (0 a 100).
+- Não se modela o rio a jusante da barragem, nem o caudal base do rio: o
+  reservatório só recebe água da chuva.
 - As medições não têm ruído nem falhas de sensor.
 - Um recurso ativado gasta-se: sai do estoque e não volta quando o efeito
   acaba (uma bomba ou equipa "usada" não regressa ao bairro).
@@ -33,8 +34,7 @@ Limitações (o guia pede que fiquem documentadas):
 from dataclasses import dataclass, field
 
 from config import (AREA_BACIA, CAPACIDADE_RESERVATORIO, CAPACIDADE_TANQUE,
-                    CAUDAL_BASE_ENTRADA, EFEITO_RECURSO, FATOR_JUSANTE,
-                    HUMIDADE_POR_MM, NIVEL_JUSANTE_BASE, PERDA_DRENAGEM_SOLO,
+                    EFEITO_RECURSO, HUMIDADE_POR_MM, PERDA_DRENAGEM_SOLO,
                     PROTECAO_MAXIMA, SECAGEM_SOLO)
 
 
@@ -78,20 +78,39 @@ class Bairro:
 
     def entrada_chuva(self, chuva):
         """Água que `chuva` mm acrescentam ao bairro num ciclo
-        (mais com o solo encharcado)."""
+        (mais com o solo encharcado).
+
+        Args:
+            chuva (float): Chuva do ciclo, em mm.
+
+        Returns:
+            float: Água acrescentada ao bairro, em % do tanque.
+        """
         return chuva * self.fator_chuva * (1.0 + self.humidade)
 
     def drenagem_natural(self):
         """Água escoada por ciclo pelo próprio bairro, sem bombas nem
-        equipas: menor com o solo encharcado."""
+        equipas: menor com o solo encharcado.
+
+        Returns:
+            float: Drenagem natural por ciclo.
+        """
         return self.drenagem_base * (1.0 - PERDA_DRENAGEM_SOLO * self.humidade)
 
     def drenagem(self):
-        """Água escoada por ciclo, somando bombas e equipas ativas."""
+        """Água escoada por ciclo, somando bombas e equipas ativas.
+
+        Returns:
+            float: Drenagem total por ciclo.
+        """
         return self.drenagem_natural() + sum(e["drenagem"] for e in self.efeitos)
 
     def protecao(self):
-        """Fração da água da descarga travada pelas barreiras ativas."""
+        """Fração da água da descarga travada pelas barreiras ativas.
+
+        Returns:
+            float: Valor entre 0 e `PROTECAO_MAXIMA`.
+        """
         return min(PROTECAO_MAXIMA, sum(e["protecao"] for e in self.efeitos))
 
     # ---- estoque. Regras de segurança do ExecutorLocal (modelo Gaia):
@@ -199,15 +218,18 @@ class Ambiente:
     """
 
     def __init__(self, cenario):
-        """Cria o mundo com o estado inicial do cenário (os argumentos estão
-        na descrição da classe)."""
+        """Cria o mundo com o estado inicial do cenário.
+
+        Args:
+            cenario (dict): Cenário de cenarios.py ("reservatorio", "chuva"
+                e "bairros").
+        """
         self.ciclo = 0
         self.nivel_reservatorio = float(cenario["reservatorio"])
         self.chuva = list(cenario.get("chuva", []))
         self.chuva_ultimo_ciclo = 0.0    # chuva do ciclo que acabou de passar
-        self.caudal_entrada = CAUDAL_BASE_ENTRADA
+        self.caudal_entrada = 0.0
         self.caudal_saida = 0.0
-        self.nivel_jusante = NIVEL_JUSANTE_BASE
         self._descarga = {"caudal": 0.0, "atraso": 0, "ciclos": 0}
         self.bairros = {}
         for nome, dados in cenario["bairros"].items():
@@ -226,20 +248,32 @@ class Ambiente:
     # ---- leitura ------------------------------------------------------
 
     def chuva_atual(self):
-        """Chuva prevista para o ciclo atual, em mm."""
+        """Chuva prevista para o ciclo atual, em mm.
+
+        Returns:
+            float: Chuva do ciclo (0 depois do fim da lista do cenário).
+        """
         return self.chuva[self.ciclo] if self.ciclo < len(self.chuva) else 0.0
 
     def descarga_ativa(self):
-        """True enquanto houver uma descarga marcada ou a decorrer."""
+        """Diz se há uma descarga marcada ou a decorrer.
+
+        Returns:
+            bool: True enquanto houver uma descarga.
+        """
         return self._descarga["ciclos"] > 0
 
     def resumo(self):
-        """Texto curto com o estado atual, para o registo do terminal."""
+        """Texto curto com o estado atual, para o registo do terminal.
+
+        Returns:
+            str: Ciclo, chuva, reservatório, saída e nível de cada bairro.
+        """
         bairros = " ".join(f"{b.nome}:{b.nivel:.0f}({b.velocidade:+.1f})"
                            for b in self.bairros.values())
         return (f"ciclo {self.ciclo} chuva {self.chuva_atual():.0f} | "
                 f"reservatório {self.nivel_reservatorio:.1f}% saída "
-                f"{self.caudal_saida:.0f} | jusante {self.nivel_jusante:.2f}m | {bairros}")
+                f"{self.caudal_saida:.0f} | {bairros}")
 
     # ---- ações dos agentes ---------------------------------------------
 
@@ -281,14 +315,11 @@ class Ambiente:
 
         # 1-2. reservatório
         self.caudal_saida = self._caudal_da_descarga()
-        self.caudal_entrada = CAUDAL_BASE_ENTRADA + chuva * AREA_BACIA
+        self.caudal_entrada = chuva * AREA_BACIA
         variacao = 100.0 * (self.caudal_entrada - self.caudal_saida) / CAPACIDADE_RESERVATORIO
         self.nivel_reservatorio = _limitar(self.nivel_reservatorio + variacao, 0.0, 100.0)
 
-        # 3. rio a jusante
-        self.nivel_jusante = NIVEL_JUSANTE_BASE + self.caudal_saida * FATOR_JUSANTE
-
-        # 4-6. bairros
+        # 3-5. bairros
         for b in self.bairros.values():
             entrada = (b.entrada_chuva(chuva)
                        + self.caudal_saida * b.exposicao * (1.0 - b.protecao()))

@@ -87,7 +87,11 @@ class Oferta:
 
     @property
     def disponivel(self):
-        """True se ainda há unidades para contratar."""
+        """Diz se a oferta ainda tem unidades para contratar.
+
+        Returns:
+            bool: True se `quantidade` é maior que 0.
+        """
         return self.quantidade > 0
 
     def para_mensagem(self):

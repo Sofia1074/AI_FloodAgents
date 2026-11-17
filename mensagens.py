@@ -217,7 +217,15 @@ def template(protocolo, *performativas, thread=None):
     from spade.template import Template
 
     def um(performativa):
-        """Template de um só protocolo, com uma performativa e o thread, se houver."""
+        """Template de um só protocolo, com uma performativa e o thread, se houver.
+
+        Args:
+            performativa (str | None): A performativa a exigir, ou None para
+                aceitar qualquer uma.
+
+        Returns:
+            Template: O template do SPADE para esta combinação.
+        """
         t = Template()
         t.set_metadata("protocol", protocolo)
         if performativa:

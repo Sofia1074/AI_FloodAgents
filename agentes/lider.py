@@ -51,6 +51,39 @@ def atomo(texto):
     return "".join(c for c in sem_acentos if not unicodedata.combining(c))
 
 
+def templates_do_lider():
+    """Os filtros dos dois behaviours que escutam o líder.
+
+    Qualquer mensagem que chegue ao líder e não encaixe em nenhum destes
+    templates fica sem behaviour e o SPADE escreve "No behaviour matched for
+    message" no terminal. Por isso, quando um agente passa a enviar uma
+    mensagem nova ao líder, este é o sítio onde a receber (e o teste
+    `test_lider_bdi` confere a lista).
+
+    Returns:
+        tuple: (recebe, fornece). `recebe` serve o `OuvirMensagens`: alertas e
+        respostas do operador, respostas do diretório às ofertas, propostas,
+        avisos e pedidos de voto da barragem. `fornece` serve o
+        `FornecedorServicos`: o Contract Net dos outros bairros e a execução
+        de serviços.
+    """
+    recebe = (mensagens.template(mensagens.ALERTA_RISCO, mensagens.INFORM)
+              | mensagens.template(mensagens.PEDIR_MITIGACAO, mensagens.AGREE,
+                                   mensagens.REFUSE, mensagens.INFORM,
+                                   mensagens.FAILURE)
+              | mensagens.template(mensagens.GERIR_OFERTA, mensagens.AGREE,
+                                   mensagens.REFUSE)
+              | mensagens.template(mensagens.NEGOCIAR_DESCARGA, mensagens.PROPOSE,
+                                   mensagens.INFORM)
+              | mensagens.template(mensagens.VOTACAO, mensagens.PROPOSE))
+    fornece = (mensagens.template(mensagens.CONTRACT_NET, mensagens.CFP,
+                                  mensagens.PROPOSE, mensagens.ACCEPT_PROPOSAL,
+                                  mensagens.REJECT_PROPOSAL, mensagens.INFORM)
+               | mensagens.template(mensagens.EXECUTAR_SERVICO, mensagens.AGREE,
+                                    mensagens.INFORM, mensagens.FAILURE))
+    return recebe, fornece
+
+
 class CommunityLeader(BDIAgent):
     """Agentes 3A, 3B, 3C — Líder comunitário de um bairro.
 
@@ -100,7 +133,11 @@ class CommunityLeader(BDIAgent):
 
     @property
     def estado(self):
-        """O bairro no ambiente: nível, estoque, reservas e moeda."""
+        """O bairro no ambiente: nível, estoque, reservas e moeda.
+
+        Returns:
+            ambiente.Bairro: O estado físico do bairro deste líder.
+        """
         return self.ambiente.bairros[self.bairro]
 
     def add_custom_actions(self, actions):
@@ -150,6 +187,16 @@ class CommunityLeader(BDIAgent):
                 # repetem a mesma falta, por isso só conta a primeira resposta)
                 if msg.tipo in TIPOS_COM_FALTA:
                     lider.registar_falta(msg.corpo.get("falta") or {})
+
+            elif msg.protocolo == mensagens.GERIR_OFERTA:
+                # resposta do diretório à publicação das ofertas. O diretório já
+                # mostra o evento OFERTA; aqui só se avisa se as recusou
+                if msg.performativa == mensagens.REFUSE:
+                    registo.evento("OFERTA", f"bairro {lider.bairro}: o diretório "
+                                             f"recusou as ofertas "
+                                             f"({msg.corpo.get('motivo')})")
+                else:
+                    registo.detalhe(lider.nome, "o diretório registou as ofertas")
 
             elif msg.tipo == "proposta_descarga":
                 if not lider.rede.pode_comunicar(lider.nome, "barragem"):
@@ -206,19 +253,8 @@ class CommunityLeader(BDIAgent):
         vão para o FSM de cada compra (ver `contratar`).
         """
         registo.detalhe(self.nome, f"agente BDI ativo (bairro {self.bairro})")
-        recebe = (mensagens.template(mensagens.ALERTA_RISCO, mensagens.INFORM)
-                  | mensagens.template(mensagens.PEDIR_MITIGACAO, mensagens.AGREE,
-                                       mensagens.REFUSE, mensagens.INFORM,
-                                       mensagens.FAILURE)
-                  | mensagens.template(mensagens.NEGOCIAR_DESCARGA, mensagens.PROPOSE,
-                                       mensagens.INFORM)
-                  | mensagens.template(mensagens.VOTACAO, mensagens.PROPOSE))
+        recebe, fornece = templates_do_lider()
         self.add_behaviour(self.OuvirMensagens(), recebe)
-        fornece = (mensagens.template(mensagens.CONTRACT_NET, mensagens.CFP,
-                                      mensagens.PROPOSE, mensagens.ACCEPT_PROPOSAL,
-                                      mensagens.REJECT_PROPOSAL, mensagens.INFORM)
-                   | mensagens.template(mensagens.EXECUTAR_SERVICO, mensagens.AGREE,
-                                        mensagens.INFORM, mensagens.FAILURE))
         self.add_behaviour(self.FornecedorServicos(), fornece)
         self.add_behaviour(self.PublicarOfertas())
 

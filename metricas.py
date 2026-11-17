@@ -49,7 +49,12 @@ class Recolha:
     """
 
     def __init__(self, cenario, ambiente):
-        """Cria uma recolha vazia (os argumentos estão na descrição da classe)."""
+        """Cria uma recolha vazia.
+
+        Args:
+            cenario (str): Nome do cenário (fica no resumo).
+            ambiente (ambiente.Ambiente): O ambiente da simulação.
+        """
         self.cenario = cenario
         self.ambiente = ambiente
         self.inicio = time.monotonic()
@@ -72,7 +77,6 @@ class Recolha:
             "reservatorio": round(amb.nivel_reservatorio, 2),
             "caudal_entrada": round(amb.caudal_entrada, 2),
             "caudal_saida": round(amb.caudal_saida, 2),
-            "nivel_jusante": round(amb.nivel_jusante, 3),
         }
         for nome, b in amb.bairros.items():
             risco, _ = classificar_risco(
@@ -90,43 +94,90 @@ class Recolha:
     # ---- ganchos chamados pelos agentes ----------------------------------
 
     def mensagem(self, remetente, performativa):
-        """Conta uma mensagem enviada."""
+        """Conta uma mensagem enviada.
+
+        Args:
+            remetente (str): Nome do agente que enviou.
+            performativa (str | None): Performativa FIPA da mensagem.
+        """
         self.mensagens[performativa or "sem performativa"] += 1
         self.mensagens_por_agente[remetente] += 1
 
     def alerta(self, bairro, risco):
-        """O operador do bairro alertou o líder com este risco."""
+        """O operador do bairro alertou o líder com este risco.
+
+        Args:
+            bairro (str): "A", "B" ou "C".
+            risco (str): Classe de risco do alerta.
+        """
         self._evento("alerta", bairro=bairro, risco=risco)
 
     def mitigacao(self, bairro, recursos):
-        """O operador ativou recursos de mitigação ({recurso: quantidade})."""
+        """O operador ativou recursos de mitigação.
+
+        Args:
+            bairro (str): "A", "B" ou "C".
+            recursos (dict): Quantidade ativada por recurso, como {"bombas": 2}.
+        """
         self._evento("mitigacao", bairro=bairro, recursos=dict(recursos))
 
     def proposta(self, caudal):
-        """A barragem enviou um plano de descarga aos líderes."""
+        """A barragem enviou um plano de descarga aos líderes.
+
+        Args:
+            caudal (float): Caudal proposto.
+        """
         self._evento("proposta", caudal=caudal)
 
     def decisao(self, aprovado, favoraveis, total):
-        """Resultado da votação da última proposta."""
+        """Resultado da votação da última proposta.
+
+        Args:
+            aprovado (bool): Se a proposta foi aprovada.
+            favoraveis (int): Votos a favor.
+            total (int): Número de votantes.
+        """
         self._evento("decisao", aprovado=aprovado, favoraveis=favoraveis, total=total)
 
     def rejeitada_seguranca(self, motivo=""):
-        """A barragem rejeitou um plano por não respeitar os limites de segurança."""
+        """A barragem rejeitou um plano por não respeitar os limites de segurança.
+
+        Args:
+            motivo (str): Porque foi rejeitado.
+        """
         self._evento("rejeitada_seguranca", motivo=motivo)
 
     def descarga(self, caudal, duracao):
-        """A barragem executou uma descarga."""
+        """A barragem executou uma descarga.
+
+        Args:
+            caudal (float): Caudal libertado.
+            duracao (int): Ciclos de duração.
+        """
         self._evento("descarga", caudal=caudal, duracao=duracao)
 
     def transacao(self, comprador, fornecedor, servico, quantidade, preco):
-        """Um contrato entre bairros foi pago (Contract Net)."""
+        """Um contrato entre bairros foi pago (Contract Net).
+
+        Args:
+            comprador (str): Bairro que pagou.
+            fornecedor (str): Bairro que forneceu.
+            servico (str): Serviço contratado, como "bombas".
+            quantidade (int): Unidades contratadas.
+            preco (float): Preço por unidade.
+        """
         self._evento("transacao", comprador=comprador, fornecedor=fornecedor,
                      servico=servico, quantidade=quantidade, preco=preco)
 
     # ---- resultados ------------------------------------------------------
 
     def resumo(self):
-        """Devolve os totais de todas as métricas num dicionário."""
+        """Devolve os totais de todas as métricas num dicionário.
+
+        Returns:
+            dict: O conteúdo do `resumo.json` (deteção, mensagens, tempo até
+            à decisão, propostas, recursos, transações e níveis).
+        """
         bairros = list(self.ambiente.bairros)
         por_tipo = {}
         for e in self.eventos:
@@ -190,7 +241,11 @@ class Recolha:
         }
 
     def exportar(self, pasta):
-        """Escreve ciclos.csv, eventos.csv e resumo.json em `pasta`."""
+        """Escreve ciclos.csv, eventos.csv e resumo.json em `pasta`.
+
+        Args:
+            pasta (str): Pasta de destino (criada se não existir).
+        """
         os.makedirs(pasta, exist_ok=True)
         if self.ciclos:
             with open(os.path.join(pasta, "ciclos.csv"), "w", newline="",
@@ -234,7 +289,15 @@ _atual = None
 
 
 def iniciar(cenario, ambiente):
-    """Começa uma recolha nova para o cenário e o ambiente dados."""
+    """Começa uma recolha nova para o cenário e o ambiente dados.
+
+    Args:
+        cenario (str): Nome do cenário.
+        ambiente (ambiente.Ambiente): O ambiente da simulação.
+
+    Returns:
+        Recolha: A recolha criada, que passa a ser a recolha em curso.
+    """
     global _atual
     _atual = Recolha(cenario, ambiente)
     return _atual
@@ -247,7 +310,12 @@ def terminar():
 
 
 def atual():
-    """A recolha em curso, ou None."""
+    """A recolha em curso, ou None.
+
+    Returns:
+        Recolha | None: A recolha iniciada por `iniciar`, se ainda não foi
+        terminada.
+    """
     return _atual
 
 
@@ -255,6 +323,7 @@ def _gancho(nome):
     """Cria a função do módulo que passa a chamada ao método `nome` da
     recolha em curso, e não faz nada se não houver nenhuma."""
     def chamar(*args, **kwargs):
+        """Chama o método da recolha em curso, se houver."""
         if _atual is not None:
             getattr(_atual, nome)(*args, **kwargs)
     chamar.__name__ = nome
@@ -279,6 +348,9 @@ def instalar_contador_mensagens(classe_behaviour=None):
     Embrulha `send` de `classe_behaviour` (por omissão o CyclicBehaviour do
     SPADE, de onde todos os behaviours herdam). Chamar duas vezes não
     conta a dobrar.
+
+    Args:
+        classe_behaviour (type | None): Classe cujo `send` se embrulha.
     """
     if classe_behaviour is None:
         from spade.behaviour import CyclicBehaviour
@@ -288,7 +360,14 @@ def instalar_contador_mensagens(classe_behaviour=None):
         return
 
     async def send(self, msg):
-        """Conta a mensagem e envia-a com o `send` original do SPADE."""
+        """Conta a mensagem e envia-a com o `send` original do SPADE.
+
+        Args:
+            msg (Message): A mensagem a enviar.
+
+        Returns:
+            O resultado do `send` original.
+        """
         agente = getattr(getattr(self, "agent", None), "name", "?")
         mensagem(str(agente), msg.get_metadata("performative"))
         return await original(self, msg)

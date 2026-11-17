@@ -57,7 +57,15 @@ GRUPOS = {
 
 
 def pasta_do(nome, cenario):
-    """Pasta onde um experimento guarda as suas métricas."""
+    """Pasta onde um experimento guarda as suas métricas.
+
+    Args:
+        nome (str): Nome do experimento, como "1 rodada".
+        cenario (str): Uma chave de `CENARIOS`.
+
+    Returns:
+        str: O caminho da pasta, com o nome limpo de caracteres especiais.
+    """
     seguro = "".join(c if c.isalnum() else "_" for c in nome)
     return os.path.join(PASTA, seguro, cenario)
 
@@ -141,7 +149,11 @@ def juntar(existentes, nova):
 
 
 def ler_tabela():
-    """Lê a tabela gravada, ou uma lista vazia se ainda não existe."""
+    """Lê a tabela gravada, ou uma lista vazia se ainda não existe.
+
+    Returns:
+        list: Uma linha (dict) por execução já gravada.
+    """
     if not os.path.isfile(TABELA):
         return []
     with open(TABELA, newline="", encoding="utf-8") as f:
@@ -149,7 +161,11 @@ def ler_tabela():
 
 
 def gravar_tabela(linhas):
-    """Escreve a tabela em resultados/experimentos/comparacao.csv."""
+    """Escreve a tabela em resultados/experimentos/comparacao.csv.
+
+    Args:
+        linhas (list): Uma linha (dict) por execução, com os `CAMPOS`.
+    """
     os.makedirs(PASTA, exist_ok=True)
     with open(TABELA, "w", newline="", encoding="utf-8") as f:
         escritor = csv.DictWriter(f, fieldnames=CAMPOS)
@@ -158,7 +174,11 @@ def gravar_tabela(linhas):
 
 
 def mostrar(linhas):
-    """Escreve a tabela no terminal, alinhada."""
+    """Escreve a tabela no terminal, alinhada.
+
+    Args:
+        linhas (list): Uma linha (dict) por execução, com os `CAMPOS`.
+    """
     cabecalho = ["experimento", "cenario", "msgs", "alertas", "deteção s", "votos ok",
                  "votos não", "descargas", "recursos", "transações", "A", "B", "C",
                  "ciclos risco"]
@@ -169,7 +189,12 @@ def mostrar(linhas):
 
 
 def main(argv):
-    """Escolhe os grupos, corre-os e grava a tabela depois de cada execução."""
+    """Escolhe os grupos, corre-os e grava a tabela depois de cada execução.
+
+    Args:
+        argv (list): Argumentos da linha de comandos: nomes de grupos e a
+            opção `--lista` (só mostra o plano).
+    """
     grupos = [a for a in argv if not a.startswith("-")] or list(GRUPOS)
     desconhecidos = [g for g in grupos if g not in GRUPOS]
     if desconhecidos:

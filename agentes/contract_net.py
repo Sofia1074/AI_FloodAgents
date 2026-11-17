@@ -87,7 +87,11 @@ class Compra:
 
     @property
     def total(self):
-        """Valor total do contrato (preço por unidade x unidades)."""
+        """Valor total do contrato (preço por unidade x unidades).
+
+        Returns:
+            float: Preço acordado vezes a quantidade acordada, com duas casas.
+        """
         return round((self.preco or 0.0) * self.quantidade_acordada, 2)
 
 
@@ -197,7 +201,17 @@ class Negociar(State):
         self.set_next_state(ENCERRAR)
 
     def mensagem(self, para, performativa, tipo, **dados):
-        """Mensagem ao fornecedor nesta contratação (protocolo e thread)."""
+        """Mensagem ao fornecedor nesta contratação (protocolo e thread).
+
+        Args:
+            para (str): JID do fornecedor.
+            performativa (str): CFP, ACCEPT_PROPOSAL, PROPOSE...
+            tipo (str): Tipo da mensagem, como "proposta".
+            **dados: Campos do corpo da mensagem.
+
+        Returns:
+            Message: A mensagem pronta a enviar.
+        """
         c = self.agent.compras[self.servico]
         return mensagens.criar(para, performativa, mensagens.CONTRACT_NET, tipo,
                                thread=c.thread, servico=c.servico, **dados)
@@ -256,7 +270,14 @@ class Negociar(State):
             rodada += 1
 
     def fechar(self, fornecedor, preco, quantidade, rodada):
-        """Guarda o acordo na `Compra`."""
+        """Guarda o acordo na `Compra`.
+
+        Args:
+            fornecedor (str): JID do fornecedor escolhido.
+            preco (float): Preço acordado por unidade.
+            quantidade (int): Unidades acordadas.
+            rodada (int): Rodada de negociação em que se chegou ao acordo.
+        """
         c = self.agent.compras[self.servico]
         c.fornecedor, c.preco, c.quantidade_acordada, c.rodadas = (
             fornecedor, preco, quantidade, rodada)
@@ -433,7 +454,15 @@ class Vendas:
                                tipo, thread=venda.thread, servico=venda.servico, **dados)
 
     def cfp(self, msg):
-        """CFP: propõe o preço base se houver excedente (regra 7), senão REFUSE."""
+        """CFP: propõe o preço base se houver excedente (regra 7), senão REFUSE.
+
+        Args:
+            msg (mensagens.Recebida): O CFP do comprador (serviço e quantidade).
+
+        Returns:
+            list: As mensagens a enviar: PROPOSE, REFUSE, ou nenhuma se o
+            comprador não pode comunicar com este líder.
+        """
         lider = self.lider
         servico, pedida = msg.corpo.get("servico"), int(msg.corpo.get("quantidade", 0))
         if not lider.rede.pode_comunicar(lider.nome, msg.remetente):
@@ -452,7 +481,15 @@ class Vendas:
 
     def contraproposta(self, venda, msg):
         """Contraproposta do comprador: aceita a partir de 70% (regra 9),
-        senão contrapõe."""
+        senão contrapõe.
+
+        Args:
+            venda (Venda): A venda em curso.
+            msg (mensagens.Recebida): A contraproposta, com o preço oferecido.
+
+        Returns:
+            list: As mensagens a enviar (pedido de execução ou nova PROPOSE).
+        """
         oferta = float(msg.corpo["preco"])
         if mercado.vendedor_aceita(venda.servico, oferta):
             venda.preco = oferta
@@ -462,7 +499,15 @@ class Vendas:
                                      preco=venda.preco, quantidade=venda.quantidade)]
 
     def aceite_pelo_comprador(self, venda, msg):
-        """O comprador aceitou o preço pedido: reserva e pede a execução."""
+        """O comprador aceitou o preço pedido: reserva e pede a execução.
+
+        Args:
+            venda (Venda): A venda em curso.
+            msg (mensagens.Recebida): O ACCEPT_PROPOSAL do comprador.
+
+        Returns:
+            list: As mensagens a enviar (FAILURE se o preço não é o proposto).
+        """
         if not mercado.vendedor_aceita(venda.servico, float(msg.corpo.get("preco", 0))):
             del self.abertas[venda.thread]
             return [self._para_comprador(venda, mensagens.FAILURE, "falha",
@@ -510,7 +555,16 @@ class Vendas:
 
     def resultado_execucao(self, msg):
         """Resposta do operador: confirma ao comprador (ConfirmarServico) ou,
-        na falha, liberta a reserva e avisa o comprador."""
+        na falha, liberta a reserva e avisa o comprador.
+
+        Args:
+            msg (mensagens.Recebida): A resposta do operador (AGREE, INFORM
+                ou FAILURE) no protocolo `executar-servico`.
+
+        Returns:
+            list: As mensagens a enviar ao comprador (nenhuma se a venda é
+            desconhecida ou a resposta é só o AGREE).
+        """
         venda = self.abertas.get(msg.thread)
         if venda is None or venda.fase != "executando":
             return []
@@ -527,7 +581,15 @@ class Vendas:
         return [self._para_comprador(venda, mensagens.FAILURE, "falha", motivo=motivo)]
 
     def pagamento(self, venda, msg):
-        """Pagamento do comprador: a moeda do fornecedor sobe."""
+        """Pagamento do comprador: a moeda do fornecedor sobe.
+
+        Args:
+            venda (Venda): A venda já confirmada.
+            msg (mensagens.Recebida): O INFORM do comprador com o valor.
+
+        Returns:
+            list: Lista vazia (o pagamento não tem resposta).
+        """
         if venda.fase != "confirmada":
             return []
         valor = float(msg.corpo.get("valor", 0.0))

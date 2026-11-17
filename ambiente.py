@@ -78,20 +78,39 @@ class Bairro:
 
     def entrada_chuva(self, chuva):
         """Água que `chuva` mm acrescentam ao bairro num ciclo
-        (mais com o solo encharcado)."""
+        (mais com o solo encharcado).
+
+        Args:
+            chuva (float): Chuva do ciclo, em mm.
+
+        Returns:
+            float: Água acrescentada ao bairro, em % do tanque.
+        """
         return chuva * self.fator_chuva * (1.0 + self.humidade)
 
     def drenagem_natural(self):
         """Água escoada por ciclo pelo próprio bairro, sem bombas nem
-        equipas: menor com o solo encharcado."""
+        equipas: menor com o solo encharcado.
+
+        Returns:
+            float: Drenagem natural por ciclo.
+        """
         return self.drenagem_base * (1.0 - PERDA_DRENAGEM_SOLO * self.humidade)
 
     def drenagem(self):
-        """Água escoada por ciclo, somando bombas e equipas ativas."""
+        """Água escoada por ciclo, somando bombas e equipas ativas.
+
+        Returns:
+            float: Drenagem total por ciclo.
+        """
         return self.drenagem_natural() + sum(e["drenagem"] for e in self.efeitos)
 
     def protecao(self):
-        """Fração da água da descarga travada pelas barreiras ativas."""
+        """Fração da água da descarga travada pelas barreiras ativas.
+
+        Returns:
+            float: Valor entre 0 e `PROTECAO_MAXIMA`.
+        """
         return min(PROTECAO_MAXIMA, sum(e["protecao"] for e in self.efeitos))
 
     # ---- estoque. Regras de segurança do ExecutorLocal (modelo Gaia):
@@ -199,8 +218,12 @@ class Ambiente:
     """
 
     def __init__(self, cenario):
-        """Cria o mundo com o estado inicial do cenário (os argumentos estão
-        na descrição da classe)."""
+        """Cria o mundo com o estado inicial do cenário.
+
+        Args:
+            cenario (dict): Cenário de cenarios.py ("reservatorio", "chuva"
+                e "bairros").
+        """
         self.ciclo = 0
         self.nivel_reservatorio = float(cenario["reservatorio"])
         self.chuva = list(cenario.get("chuva", []))
@@ -225,15 +248,27 @@ class Ambiente:
     # ---- leitura ------------------------------------------------------
 
     def chuva_atual(self):
-        """Chuva prevista para o ciclo atual, em mm."""
+        """Chuva prevista para o ciclo atual, em mm.
+
+        Returns:
+            float: Chuva do ciclo (0 depois do fim da lista do cenário).
+        """
         return self.chuva[self.ciclo] if self.ciclo < len(self.chuva) else 0.0
 
     def descarga_ativa(self):
-        """True enquanto houver uma descarga marcada ou a decorrer."""
+        """Diz se há uma descarga marcada ou a decorrer.
+
+        Returns:
+            bool: True enquanto houver uma descarga.
+        """
         return self._descarga["ciclos"] > 0
 
     def resumo(self):
-        """Texto curto com o estado atual, para o registo do terminal."""
+        """Texto curto com o estado atual, para o registo do terminal.
+
+        Returns:
+            str: Ciclo, chuva, reservatório, saída e nível de cada bairro.
+        """
         bairros = " ".join(f"{b.nome}:{b.nivel:.0f}({b.velocidade:+.1f})"
                            for b in self.bairros.values())
         return (f"ciclo {self.ciclo} chuva {self.chuva_atual():.0f} | "

@@ -82,7 +82,11 @@ class Negociacao:
 
     @property
     def id_proposta(self):
-        """Id da proposta desta rodada, como "desc-001-r2"."""
+        """Id da proposta desta rodada, como "desc-001-r2".
+
+        Returns:
+            str: O thread da negociação seguido de `-r` e do número da rodada.
+        """
         return f"{self.thread}-r{self.rodada}"
 
 
@@ -158,7 +162,14 @@ def resumo_respostas(respostas):
         str: Uma entrada por líder, pela ordem alfabética.
     """
     def texto(r):
-        """"sem resposta", "sim" ou "não" para uma resposta."""
+        """Texto de uma resposta para o registo.
+
+        Args:
+            r (dict): Resposta de um líder (`aceita`, `sem_resposta`...).
+
+        Returns:
+            str: "sem resposta", "sim" ou "não".
+        """
         if r.get("sem_resposta"):
             return "sem resposta"
         return "sim" if r["aceita"] else "não"
@@ -547,12 +558,20 @@ class DamOperator(Agent):
 
     @property
     def nivel_reservatorio(self):
-        """% de enchimento do reservatório, lido do ambiente."""
+        """% de enchimento do reservatório, lido do ambiente.
+
+        Returns:
+            float: Nível do reservatório, de 0 a 100.
+        """
         return self.ambiente.nivel_reservatorio
 
     @property
     def caudal_descarga(self):
-        """Caudal que está a ser libertado agora."""
+        """Caudal que está a ser libertado agora.
+
+        Returns:
+            float: Caudal de saída do reservatório neste ciclo (0 sem descarga).
+        """
         return self.ambiente.caudal_saida
 
     def avaliar_descarga(self):

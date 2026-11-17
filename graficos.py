@@ -67,7 +67,15 @@ plt.rcParams.update({
 
 
 def ler_ciclos(pasta):
-    """Lê ciclos.csv e devolve uma lista de dicts com números convertidos."""
+    """Lê ciclos.csv e devolve uma lista de dicts com números convertidos.
+
+    Args:
+        pasta (str): Pasta do cenário em resultados/.
+
+    Returns:
+        list: Uma linha (dict) por ciclo, com os valores em float (exceto
+        os `risco_*`, que ficam em texto).
+    """
     with open(os.path.join(pasta, "ciclos.csv"), encoding="utf-8") as f:
         linhas = list(csv.DictReader(f))
     for linha in linhas:
@@ -78,7 +86,14 @@ def ler_ciclos(pasta):
 
 
 def ler_descargas(pasta):
-    """Devolve [(ciclo_inicio, ciclo_fim)] das descargas, a partir de eventos.csv."""
+    """Devolve [(ciclo_inicio, ciclo_fim)] das descargas, a partir de eventos.csv.
+
+    Args:
+        pasta (str): Pasta do cenário em resultados/.
+
+    Returns:
+        list: Um par (ciclo de início, ciclo de fim) por descarga.
+    """
     periodos = []
     with open(os.path.join(pasta, "eventos.csv"), encoding="utf-8") as f:
         for e in csv.DictReader(f):
@@ -147,7 +162,14 @@ def _sombrear_descargas(ax, descargas, fim_dados, rotulo=True):
 
 
 def grafico_bairros(cenario, ciclos, descargas, destino):
-    """Chuva por ciclo e nível da água de cada bairro, com faixas de risco."""
+    """Chuva por ciclo e nível da água de cada bairro, com faixas de risco.
+
+    Args:
+        cenario (str): Nome do cenário (título do gráfico).
+        ciclos (list): Linhas lidas por `ler_ciclos`.
+        descargas (list): Períodos lidos por `ler_descargas`.
+        destino (str): Caminho do PNG a escrever.
+    """
     x = [l["ciclo"] for l in ciclos]
     fig, (ax_chuva, ax) = plt.subplots(
         2, 1, figsize=(11, 6.2), sharex=True,
@@ -194,7 +216,14 @@ def grafico_bairros(cenario, ciclos, descargas, destino):
 
 
 def grafico_reservatorio(cenario, ciclos, descargas, destino):
-    """Nível do reservatório (com o limiar de alerta) e caudal de descarga."""
+    """Nível do reservatório (com o limiar de alerta) e caudal de descarga.
+
+    Args:
+        cenario (str): Nome do cenário (título do gráfico).
+        ciclos (list): Linhas lidas por `ler_ciclos`.
+        descargas (list): Períodos lidos por `ler_descargas`.
+        destino (str): Caminho do PNG a escrever.
+    """
     x = [l["ciclo"] for l in ciclos]
     fig, (ax, ax_caudal) = plt.subplots(
         2, 1, figsize=(11, 5.2), sharex=True,
@@ -227,7 +256,12 @@ def grafico_reservatorio(cenario, ciclos, descargas, destino):
 
 
 def tabela_resumo(cenarios, destino):
-    """Escreve as métricas principais dos cenários lado a lado (CSV)."""
+    """Escreve as métricas principais dos cenários lado a lado (CSV).
+
+    Args:
+        cenarios (list): Nomes dos cenários com `resumo.json` gravado.
+        destino (str): Caminho do CSV a escrever.
+    """
     linhas = []
     for c in cenarios:
         with open(os.path.join(PASTA, c, "resumo.json"), encoding="utf-8") as f:

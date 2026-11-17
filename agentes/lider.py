@@ -133,7 +133,11 @@ class CommunityLeader(BDIAgent):
 
     @property
     def estado(self):
-        """O bairro no ambiente: nível, estoque, reservas e moeda."""
+        """O bairro no ambiente: nível, estoque, reservas e moeda.
+
+        Returns:
+            ambiente.Bairro: O estado físico do bairro deste líder.
+        """
         return self.ambiente.bairros[self.bairro]
 
     def add_custom_actions(self, actions):

@@ -222,97 +222,125 @@ vendedor contrapõe 16, comprador oferece 14 (70%) e o vendedor aceita.
 </span><span id="L-94"><a href="#L-94"><span class="linenos"> 94</span></a>
 </span><span id="L-95"><a href="#L-95"><span class="linenos"> 95</span></a>
 </span><span id="L-96"><a href="#L-96"><span class="linenos"> 96</span></a><span class="k">def</span><span class="w"> </span><span class="nf">arredondar</span><span class="p">(</span><span class="n">preco</span><span class="p">):</span>
-</span><span id="L-97"><a href="#L-97"><span class="linenos"> 97</span></a><span class="w">    </span><span class="sd">"""Arredonda um preço a duas casas (moeda fictícia)."""</span>
-</span><span id="L-98"><a href="#L-98"><span class="linenos"> 98</span></a>    <span class="k">return</span> <span class="nb">round</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">preco</span><span class="p">),</span> <span class="mi">2</span><span class="p">)</span>
-</span><span id="L-99"><a href="#L-99"><span class="linenos"> 99</span></a>
-</span><span id="L-100"><a href="#L-100"><span class="linenos">100</span></a>
-</span><span id="L-101"><a href="#L-101"><span class="linenos">101</span></a><span class="c1"># ---- Vendedor (Fornecedor) --------------------------------------------------</span>
-</span><span id="L-102"><a href="#L-102"><span class="linenos">102</span></a>
-</span><span id="L-103"><a href="#L-103"><span class="linenos">103</span></a><span class="k">def</span><span class="w"> </span><span class="nf">preco_minimo_vendedor</span><span class="p">(</span><span class="n">servico</span><span class="p">):</span>
-</span><span id="L-104"><a href="#L-104"><span class="linenos">104</span></a><span class="w">    </span><span class="sd">"""Menor preço por unidade que o vendedor aceita (70% do preço base)."""</span>
-</span><span id="L-105"><a href="#L-105"><span class="linenos">105</span></a>    <span class="k">return</span> <span class="n">arredondar</span><span class="p">(</span><span class="n">FRACAO_MINIMA_VENDEDOR</span> <span class="o">*</span> <span class="n">preco_base</span><span class="p">(</span><span class="n">servico</span><span class="p">))</span>
+</span><span id="L-97"><a href="#L-97"><span class="linenos"> 97</span></a><span class="w">    </span><span class="sd">"""Arredonda um preço a duas casas (moeda fictícia).</span>
+</span><span id="L-98"><a href="#L-98"><span class="linenos"> 98</span></a>
+</span><span id="L-99"><a href="#L-99"><span class="linenos"> 99</span></a><span class="sd">    Args:</span>
+</span><span id="L-100"><a href="#L-100"><span class="linenos">100</span></a><span class="sd">        preco (float): Preço a arredondar.</span>
+</span><span id="L-101"><a href="#L-101"><span class="linenos">101</span></a>
+</span><span id="L-102"><a href="#L-102"><span class="linenos">102</span></a><span class="sd">    Returns:</span>
+</span><span id="L-103"><a href="#L-103"><span class="linenos">103</span></a><span class="sd">        float: O preço com duas casas decimais.</span>
+</span><span id="L-104"><a href="#L-104"><span class="linenos">104</span></a><span class="sd">    """</span>
+</span><span id="L-105"><a href="#L-105"><span class="linenos">105</span></a>    <span class="k">return</span> <span class="nb">round</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">preco</span><span class="p">),</span> <span class="mi">2</span><span class="p">)</span>
 </span><span id="L-106"><a href="#L-106"><span class="linenos">106</span></a>
 </span><span id="L-107"><a href="#L-107"><span class="linenos">107</span></a>
-</span><span id="L-108"><a href="#L-108"><span class="linenos">108</span></a><span class="k">def</span><span class="w"> </span><span class="nf">preco_pedido_inicial</span><span class="p">(</span><span class="n">servico</span><span class="p">):</span>
-</span><span id="L-109"><a href="#L-109"><span class="linenos">109</span></a><span class="w">    </span><span class="sd">"""Preço por unidade que o vendedor pede na primeira proposta (o preço base)."""</span>
-</span><span id="L-110"><a href="#L-110"><span class="linenos">110</span></a>    <span class="k">return</span> <span class="n">arredondar</span><span class="p">(</span><span class="n">preco_base</span><span class="p">(</span><span class="n">servico</span><span class="p">))</span>
-</span><span id="L-111"><a href="#L-111"><span class="linenos">111</span></a>
+</span><span id="L-108"><a href="#L-108"><span class="linenos">108</span></a><span class="c1"># ---- Vendedor (Fornecedor) --------------------------------------------------</span>
+</span><span id="L-109"><a href="#L-109"><span class="linenos">109</span></a>
+</span><span id="L-110"><a href="#L-110"><span class="linenos">110</span></a><span class="k">def</span><span class="w"> </span><span class="nf">preco_minimo_vendedor</span><span class="p">(</span><span class="n">servico</span><span class="p">):</span>
+</span><span id="L-111"><a href="#L-111"><span class="linenos">111</span></a><span class="w">    </span><span class="sd">"""Menor preço por unidade que o vendedor aceita (70% do preço base).</span>
 </span><span id="L-112"><a href="#L-112"><span class="linenos">112</span></a>
-</span><span id="L-113"><a href="#L-113"><span class="linenos">113</span></a><span class="k">def</span><span class="w"> </span><span class="nf">vendedor_aceita</span><span class="p">(</span><span class="n">servico</span><span class="p">,</span> <span class="n">preco</span><span class="p">):</span>
-</span><span id="L-114"><a href="#L-114"><span class="linenos">114</span></a><span class="w">    </span><span class="sd">"""Regra 9: o vendedor aceita a partir de 70% do preço base.</span>
+</span><span id="L-113"><a href="#L-113"><span class="linenos">113</span></a><span class="sd">    Args:</span>
+</span><span id="L-114"><a href="#L-114"><span class="linenos">114</span></a><span class="sd">        servico (str): Serviço negociado, como "bombas".</span>
 </span><span id="L-115"><a href="#L-115"><span class="linenos">115</span></a>
-</span><span id="L-116"><a href="#L-116"><span class="linenos">116</span></a><span class="sd">    Args:</span>
-</span><span id="L-117"><a href="#L-117"><span class="linenos">117</span></a><span class="sd">        servico (str): Serviço negociado.</span>
-</span><span id="L-118"><a href="#L-118"><span class="linenos">118</span></a><span class="sd">        preco (float): Preço por unidade oferecido pelo comprador.</span>
-</span><span id="L-119"><a href="#L-119"><span class="linenos">119</span></a>
-</span><span id="L-120"><a href="#L-120"><span class="linenos">120</span></a><span class="sd">    Returns:</span>
-</span><span id="L-121"><a href="#L-121"><span class="linenos">121</span></a><span class="sd">        bool: Se o preço é aceite.</span>
-</span><span id="L-122"><a href="#L-122"><span class="linenos">122</span></a><span class="sd">    """</span>
-</span><span id="L-123"><a href="#L-123"><span class="linenos">123</span></a>    <span class="k">return</span> <span class="n">preco</span> <span class="o">&gt;=</span> <span class="n">preco_minimo_vendedor</span><span class="p">(</span><span class="n">servico</span><span class="p">)</span> <span class="o">-</span> <span class="mf">1e-9</span>
+</span><span id="L-116"><a href="#L-116"><span class="linenos">116</span></a><span class="sd">    Returns:</span>
+</span><span id="L-117"><a href="#L-117"><span class="linenos">117</span></a><span class="sd">        float: O preço mínimo por unidade.</span>
+</span><span id="L-118"><a href="#L-118"><span class="linenos">118</span></a><span class="sd">    """</span>
+</span><span id="L-119"><a href="#L-119"><span class="linenos">119</span></a>    <span class="k">return</span> <span class="n">arredondar</span><span class="p">(</span><span class="n">FRACAO_MINIMA_VENDEDOR</span> <span class="o">*</span> <span class="n">preco_base</span><span class="p">(</span><span class="n">servico</span><span class="p">))</span>
+</span><span id="L-120"><a href="#L-120"><span class="linenos">120</span></a>
+</span><span id="L-121"><a href="#L-121"><span class="linenos">121</span></a>
+</span><span id="L-122"><a href="#L-122"><span class="linenos">122</span></a><span class="k">def</span><span class="w"> </span><span class="nf">preco_pedido_inicial</span><span class="p">(</span><span class="n">servico</span><span class="p">):</span>
+</span><span id="L-123"><a href="#L-123"><span class="linenos">123</span></a><span class="w">    </span><span class="sd">"""Preço por unidade que o vendedor pede na primeira proposta (o preço base).</span>
 </span><span id="L-124"><a href="#L-124"><span class="linenos">124</span></a>
-</span><span id="L-125"><a href="#L-125"><span class="linenos">125</span></a>
-</span><span id="L-126"><a href="#L-126"><span class="linenos">126</span></a><span class="k">def</span><span class="w"> </span><span class="nf">contraproposta_vendedor</span><span class="p">(</span><span class="n">servico</span><span class="p">,</span> <span class="n">pedido_anterior</span><span class="p">,</span> <span class="n">oferta</span><span class="p">):</span>
-</span><span id="L-127"><a href="#L-127"><span class="linenos">127</span></a><span class="w">    </span><span class="sd">"""Novo preço do vendedor quando recusa a oferta do comprador.</span>
-</span><span id="L-128"><a href="#L-128"><span class="linenos">128</span></a>
-</span><span id="L-129"><a href="#L-129"><span class="linenos">129</span></a><span class="sd">    Ponto médio entre o que pedia e a oferta, nunca abaixo de 70% do base.</span>
-</span><span id="L-130"><a href="#L-130"><span class="linenos">130</span></a>
-</span><span id="L-131"><a href="#L-131"><span class="linenos">131</span></a><span class="sd">    Args:</span>
-</span><span id="L-132"><a href="#L-132"><span class="linenos">132</span></a><span class="sd">        servico (str): Serviço negociado.</span>
-</span><span id="L-133"><a href="#L-133"><span class="linenos">133</span></a><span class="sd">        pedido_anterior (float): Preço que o vendedor pedia.</span>
-</span><span id="L-134"><a href="#L-134"><span class="linenos">134</span></a><span class="sd">        oferta (float): Preço oferecido pelo comprador.</span>
-</span><span id="L-135"><a href="#L-135"><span class="linenos">135</span></a>
-</span><span id="L-136"><a href="#L-136"><span class="linenos">136</span></a><span class="sd">    Returns:</span>
-</span><span id="L-137"><a href="#L-137"><span class="linenos">137</span></a><span class="sd">        float: O novo preço pedido, por unidade.</span>
-</span><span id="L-138"><a href="#L-138"><span class="linenos">138</span></a><span class="sd">    """</span>
-</span><span id="L-139"><a href="#L-139"><span class="linenos">139</span></a>    <span class="k">return</span> <span class="n">arredondar</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">preco_minimo_vendedor</span><span class="p">(</span><span class="n">servico</span><span class="p">),</span>
-</span><span id="L-140"><a href="#L-140"><span class="linenos">140</span></a>                          <span class="p">(</span><span class="n">pedido_anterior</span> <span class="o">+</span> <span class="n">oferta</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">))</span>
-</span><span id="L-141"><a href="#L-141"><span class="linenos">141</span></a>
-</span><span id="L-142"><a href="#L-142"><span class="linenos">142</span></a>
-</span><span id="L-143"><a href="#L-143"><span class="linenos">143</span></a><span class="c1"># ---- Comprador --------------------------------------------------------------</span>
-</span><span id="L-144"><a href="#L-144"><span class="linenos">144</span></a>
-</span><span id="L-145"><a href="#L-145"><span class="linenos">145</span></a><span class="k">def</span><span class="w"> </span><span class="nf">oferta_inicial_comprador</span><span class="p">(</span><span class="n">servico</span><span class="p">):</span>
-</span><span id="L-146"><a href="#L-146"><span class="linenos">146</span></a><span class="w">    </span><span class="sd">"""Primeira oferta do comprador: 60% do preço base, por unidade."""</span>
-</span><span id="L-147"><a href="#L-147"><span class="linenos">147</span></a>    <span class="k">return</span> <span class="n">arredondar</span><span class="p">(</span><span class="n">FRACAO_ABERTURA_COMPRADOR</span> <span class="o">*</span> <span class="n">preco_base</span><span class="p">(</span><span class="n">servico</span><span class="p">))</span>
-</span><span id="L-148"><a href="#L-148"><span class="linenos">148</span></a>
+</span><span id="L-125"><a href="#L-125"><span class="linenos">125</span></a><span class="sd">    Args:</span>
+</span><span id="L-126"><a href="#L-126"><span class="linenos">126</span></a><span class="sd">        servico (str): Serviço negociado, como "bombas".</span>
+</span><span id="L-127"><a href="#L-127"><span class="linenos">127</span></a>
+</span><span id="L-128"><a href="#L-128"><span class="linenos">128</span></a><span class="sd">    Returns:</span>
+</span><span id="L-129"><a href="#L-129"><span class="linenos">129</span></a><span class="sd">        float: O preço base por unidade.</span>
+</span><span id="L-130"><a href="#L-130"><span class="linenos">130</span></a><span class="sd">    """</span>
+</span><span id="L-131"><a href="#L-131"><span class="linenos">131</span></a>    <span class="k">return</span> <span class="n">arredondar</span><span class="p">(</span><span class="n">preco_base</span><span class="p">(</span><span class="n">servico</span><span class="p">))</span>
+</span><span id="L-132"><a href="#L-132"><span class="linenos">132</span></a>
+</span><span id="L-133"><a href="#L-133"><span class="linenos">133</span></a>
+</span><span id="L-134"><a href="#L-134"><span class="linenos">134</span></a><span class="k">def</span><span class="w"> </span><span class="nf">vendedor_aceita</span><span class="p">(</span><span class="n">servico</span><span class="p">,</span> <span class="n">preco</span><span class="p">):</span>
+</span><span id="L-135"><a href="#L-135"><span class="linenos">135</span></a><span class="w">    </span><span class="sd">"""Regra 9: o vendedor aceita a partir de 70% do preço base.</span>
+</span><span id="L-136"><a href="#L-136"><span class="linenos">136</span></a>
+</span><span id="L-137"><a href="#L-137"><span class="linenos">137</span></a><span class="sd">    Args:</span>
+</span><span id="L-138"><a href="#L-138"><span class="linenos">138</span></a><span class="sd">        servico (str): Serviço negociado.</span>
+</span><span id="L-139"><a href="#L-139"><span class="linenos">139</span></a><span class="sd">        preco (float): Preço por unidade oferecido pelo comprador.</span>
+</span><span id="L-140"><a href="#L-140"><span class="linenos">140</span></a>
+</span><span id="L-141"><a href="#L-141"><span class="linenos">141</span></a><span class="sd">    Returns:</span>
+</span><span id="L-142"><a href="#L-142"><span class="linenos">142</span></a><span class="sd">        bool: Se o preço é aceite.</span>
+</span><span id="L-143"><a href="#L-143"><span class="linenos">143</span></a><span class="sd">    """</span>
+</span><span id="L-144"><a href="#L-144"><span class="linenos">144</span></a>    <span class="k">return</span> <span class="n">preco</span> <span class="o">&gt;=</span> <span class="n">preco_minimo_vendedor</span><span class="p">(</span><span class="n">servico</span><span class="p">)</span> <span class="o">-</span> <span class="mf">1e-9</span>
+</span><span id="L-145"><a href="#L-145"><span class="linenos">145</span></a>
+</span><span id="L-146"><a href="#L-146"><span class="linenos">146</span></a>
+</span><span id="L-147"><a href="#L-147"><span class="linenos">147</span></a><span class="k">def</span><span class="w"> </span><span class="nf">contraproposta_vendedor</span><span class="p">(</span><span class="n">servico</span><span class="p">,</span> <span class="n">pedido_anterior</span><span class="p">,</span> <span class="n">oferta</span><span class="p">):</span>
+</span><span id="L-148"><a href="#L-148"><span class="linenos">148</span></a><span class="w">    </span><span class="sd">"""Novo preço do vendedor quando recusa a oferta do comprador.</span>
 </span><span id="L-149"><a href="#L-149"><span class="linenos">149</span></a>
-</span><span id="L-150"><a href="#L-150"><span class="linenos">150</span></a><span class="k">def</span><span class="w"> </span><span class="nf">decisao_comprador</span><span class="p">(</span><span class="n">servico</span><span class="p">,</span> <span class="n">preco_pedido</span><span class="p">,</span> <span class="n">quantidade</span><span class="p">,</span> <span class="n">moeda_disponivel</span><span class="p">,</span>
-</span><span id="L-151"><a href="#L-151"><span class="linenos">151</span></a>                      <span class="n">rodada</span><span class="p">,</span> <span class="n">ultima_oferta</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">max_rodadas</span><span class="o">=</span><span class="n">MAX_RODADAS_CN</span><span class="p">):</span>
-</span><span id="L-152"><a href="#L-152"><span class="linenos">152</span></a><span class="w">    </span><span class="sd">"""O que o comprador faz perante o preço pedido pelo vendedor.</span>
-</span><span id="L-153"><a href="#L-153"><span class="linenos">153</span></a>
-</span><span id="L-154"><a href="#L-154"><span class="linenos">154</span></a><span class="sd">    Args:</span>
-</span><span id="L-155"><a href="#L-155"><span class="linenos">155</span></a><span class="sd">        servico (str): Serviço negociado.</span>
-</span><span id="L-156"><a href="#L-156"><span class="linenos">156</span></a><span class="sd">        preco_pedido (float): Preço por unidade pedido pelo vendedor.</span>
-</span><span id="L-157"><a href="#L-157"><span class="linenos">157</span></a><span class="sd">        quantidade (int): Unidades propostas.</span>
-</span><span id="L-158"><a href="#L-158"><span class="linenos">158</span></a><span class="sd">        moeda_disponivel (float): Moeda do bairro ainda não comprometida.</span>
-</span><span id="L-159"><a href="#L-159"><span class="linenos">159</span></a><span class="sd">        rodada (int): Rodada atual, a começar em 1.</span>
-</span><span id="L-160"><a href="#L-160"><span class="linenos">160</span></a><span class="sd">        ultima_oferta (float | None): Última oferta do comprador (None na</span>
-</span><span id="L-161"><a href="#L-161"><span class="linenos">161</span></a><span class="sd">            primeira rodada).</span>
-</span><span id="L-162"><a href="#L-162"><span class="linenos">162</span></a><span class="sd">        max_rodadas (int): Rodadas permitidas.</span>
+</span><span id="L-150"><a href="#L-150"><span class="linenos">150</span></a><span class="sd">    Ponto médio entre o que pedia e a oferta, nunca abaixo de 70% do base.</span>
+</span><span id="L-151"><a href="#L-151"><span class="linenos">151</span></a>
+</span><span id="L-152"><a href="#L-152"><span class="linenos">152</span></a><span class="sd">    Args:</span>
+</span><span id="L-153"><a href="#L-153"><span class="linenos">153</span></a><span class="sd">        servico (str): Serviço negociado.</span>
+</span><span id="L-154"><a href="#L-154"><span class="linenos">154</span></a><span class="sd">        pedido_anterior (float): Preço que o vendedor pedia.</span>
+</span><span id="L-155"><a href="#L-155"><span class="linenos">155</span></a><span class="sd">        oferta (float): Preço oferecido pelo comprador.</span>
+</span><span id="L-156"><a href="#L-156"><span class="linenos">156</span></a>
+</span><span id="L-157"><a href="#L-157"><span class="linenos">157</span></a><span class="sd">    Returns:</span>
+</span><span id="L-158"><a href="#L-158"><span class="linenos">158</span></a><span class="sd">        float: O novo preço pedido, por unidade.</span>
+</span><span id="L-159"><a href="#L-159"><span class="linenos">159</span></a><span class="sd">    """</span>
+</span><span id="L-160"><a href="#L-160"><span class="linenos">160</span></a>    <span class="k">return</span> <span class="n">arredondar</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">preco_minimo_vendedor</span><span class="p">(</span><span class="n">servico</span><span class="p">),</span>
+</span><span id="L-161"><a href="#L-161"><span class="linenos">161</span></a>                          <span class="p">(</span><span class="n">pedido_anterior</span> <span class="o">+</span> <span class="n">oferta</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">))</span>
+</span><span id="L-162"><a href="#L-162"><span class="linenos">162</span></a>
 </span><span id="L-163"><a href="#L-163"><span class="linenos">163</span></a>
-</span><span id="L-164"><a href="#L-164"><span class="linenos">164</span></a><span class="sd">    Returns:</span>
-</span><span id="L-165"><a href="#L-165"><span class="linenos">165</span></a><span class="sd">        tuple: (decisão, preço por unidade). A decisão é ACEITAR (ao preço</span>
-</span><span id="L-166"><a href="#L-166"><span class="linenos">166</span></a><span class="sd">        pedido), CONTRAPROPOR (com o preço devolvido) ou DESISTIR.</span>
-</span><span id="L-167"><a href="#L-167"><span class="linenos">167</span></a><span class="sd">    """</span>
-</span><span id="L-168"><a href="#L-168"><span class="linenos">168</span></a>    <span class="n">base</span> <span class="o">=</span> <span class="n">preco_base</span><span class="p">(</span><span class="n">servico</span><span class="p">)</span>
-</span><span id="L-169"><a href="#L-169"><span class="linenos">169</span></a>    <span class="n">cabe</span> <span class="o">=</span> <span class="n">preco_pedido</span> <span class="o">*</span> <span class="n">quantidade</span> <span class="o">&lt;=</span> <span class="n">moeda_disponivel</span> <span class="o">+</span> <span class="mf">1e-9</span>     <span class="c1"># regra 8</span>
-</span><span id="L-170"><a href="#L-170"><span class="linenos">170</span></a>    <span class="n">abertura</span> <span class="o">=</span> <span class="n">oferta_inicial_comprador</span><span class="p">(</span><span class="n">servico</span><span class="p">)</span>
+</span><span id="L-164"><a href="#L-164"><span class="linenos">164</span></a><span class="c1"># ---- Comprador --------------------------------------------------------------</span>
+</span><span id="L-165"><a href="#L-165"><span class="linenos">165</span></a>
+</span><span id="L-166"><a href="#L-166"><span class="linenos">166</span></a><span class="k">def</span><span class="w"> </span><span class="nf">oferta_inicial_comprador</span><span class="p">(</span><span class="n">servico</span><span class="p">):</span>
+</span><span id="L-167"><a href="#L-167"><span class="linenos">167</span></a><span class="w">    </span><span class="sd">"""Primeira oferta do comprador: 60% do preço base, por unidade.</span>
+</span><span id="L-168"><a href="#L-168"><span class="linenos">168</span></a>
+</span><span id="L-169"><a href="#L-169"><span class="linenos">169</span></a><span class="sd">    Args:</span>
+</span><span id="L-170"><a href="#L-170"><span class="linenos">170</span></a><span class="sd">        servico (str): Serviço negociado, como "bombas".</span>
 </span><span id="L-171"><a href="#L-171"><span class="linenos">171</span></a>
-</span><span id="L-172"><a href="#L-172"><span class="linenos">172</span></a>    <span class="k">if</span> <span class="n">cabe</span> <span class="ow">and</span> <span class="n">preco_pedido</span> <span class="o">&lt;=</span> <span class="n">abertura</span> <span class="o">+</span> <span class="mf">1e-9</span><span class="p">:</span>
-</span><span id="L-173"><a href="#L-173"><span class="linenos">173</span></a>        <span class="k">return</span> <span class="n">ACEITAR</span><span class="p">,</span> <span class="n">arredondar</span><span class="p">(</span><span class="n">preco_pedido</span><span class="p">)</span>        <span class="c1"># já é barato: aceita</span>
-</span><span id="L-174"><a href="#L-174"><span class="linenos">174</span></a>    <span class="k">if</span> <span class="n">rodada</span> <span class="o">&gt;=</span> <span class="n">max_rodadas</span><span class="p">:</span>
-</span><span id="L-175"><a href="#L-175"><span class="linenos">175</span></a>        <span class="k">if</span> <span class="n">cabe</span> <span class="ow">and</span> <span class="n">preco_pedido</span> <span class="o">&lt;=</span> <span class="n">base</span> <span class="o">+</span> <span class="mf">1e-9</span><span class="p">:</span>
-</span><span id="L-176"><a href="#L-176"><span class="linenos">176</span></a>            <span class="k">return</span> <span class="n">ACEITAR</span><span class="p">,</span> <span class="n">arredondar</span><span class="p">(</span><span class="n">preco_pedido</span><span class="p">)</span>
-</span><span id="L-177"><a href="#L-177"><span class="linenos">177</span></a>        <span class="k">return</span> <span class="n">DESISTIR</span><span class="p">,</span> <span class="kc">None</span>
-</span><span id="L-178"><a href="#L-178"><span class="linenos">178</span></a>    <span class="k">if</span> <span class="n">ultima_oferta</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="L-179"><a href="#L-179"><span class="linenos">179</span></a>        <span class="n">oferta</span> <span class="o">=</span> <span class="n">abertura</span>                               <span class="c1"># regra 9: abre com 60%</span>
-</span><span id="L-180"><a href="#L-180"><span class="linenos">180</span></a>    <span class="k">else</span><span class="p">:</span>
-</span><span id="L-181"><a href="#L-181"><span class="linenos">181</span></a>        <span class="n">oferta</span> <span class="o">=</span> <span class="n">arredondar</span><span class="p">((</span><span class="n">ultima_oferta</span> <span class="o">+</span> <span class="n">preco_pedido</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
-</span><span id="L-182"><a href="#L-182"><span class="linenos">182</span></a>    <span class="k">if</span> <span class="n">oferta</span> <span class="o">*</span> <span class="n">quantidade</span> <span class="o">&gt;</span> <span class="n">moeda_disponivel</span> <span class="o">+</span> <span class="mf">1e-9</span><span class="p">:</span>
-</span><span id="L-183"><a href="#L-183"><span class="linenos">183</span></a>        <span class="c1"># nem a oferta cabe: oferece só o que a moeda permite, se der algo</span>
-</span><span id="L-184"><a href="#L-184"><span class="linenos">184</span></a>        <span class="n">oferta</span> <span class="o">=</span> <span class="n">arredondar</span><span class="p">(</span><span class="n">moeda_disponivel</span> <span class="o">/</span> <span class="n">quantidade</span><span class="p">)</span> <span class="k">if</span> <span class="n">quantidade</span> <span class="k">else</span> <span class="mf">0.0</span>
-</span><span id="L-185"><a href="#L-185"><span class="linenos">185</span></a>        <span class="k">if</span> <span class="n">oferta</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">oferta</span> <span class="o">&lt;=</span> <span class="p">(</span><span class="n">ultima_oferta</span> <span class="ow">or</span> <span class="mi">0</span><span class="p">):</span>
-</span><span id="L-186"><a href="#L-186"><span class="linenos">186</span></a>            <span class="k">return</span> <span class="n">DESISTIR</span><span class="p">,</span> <span class="kc">None</span>
-</span><span id="L-187"><a href="#L-187"><span class="linenos">187</span></a>    <span class="k">return</span> <span class="n">CONTRAPROPOR</span><span class="p">,</span> <span class="n">oferta</span>
+</span><span id="L-172"><a href="#L-172"><span class="linenos">172</span></a><span class="sd">    Returns:</span>
+</span><span id="L-173"><a href="#L-173"><span class="linenos">173</span></a><span class="sd">        float: A oferta de abertura por unidade.</span>
+</span><span id="L-174"><a href="#L-174"><span class="linenos">174</span></a><span class="sd">    """</span>
+</span><span id="L-175"><a href="#L-175"><span class="linenos">175</span></a>    <span class="k">return</span> <span class="n">arredondar</span><span class="p">(</span><span class="n">FRACAO_ABERTURA_COMPRADOR</span> <span class="o">*</span> <span class="n">preco_base</span><span class="p">(</span><span class="n">servico</span><span class="p">))</span>
+</span><span id="L-176"><a href="#L-176"><span class="linenos">176</span></a>
+</span><span id="L-177"><a href="#L-177"><span class="linenos">177</span></a>
+</span><span id="L-178"><a href="#L-178"><span class="linenos">178</span></a><span class="k">def</span><span class="w"> </span><span class="nf">decisao_comprador</span><span class="p">(</span><span class="n">servico</span><span class="p">,</span> <span class="n">preco_pedido</span><span class="p">,</span> <span class="n">quantidade</span><span class="p">,</span> <span class="n">moeda_disponivel</span><span class="p">,</span>
+</span><span id="L-179"><a href="#L-179"><span class="linenos">179</span></a>                      <span class="n">rodada</span><span class="p">,</span> <span class="n">ultima_oferta</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">max_rodadas</span><span class="o">=</span><span class="n">MAX_RODADAS_CN</span><span class="p">):</span>
+</span><span id="L-180"><a href="#L-180"><span class="linenos">180</span></a><span class="w">    </span><span class="sd">"""O que o comprador faz perante o preço pedido pelo vendedor.</span>
+</span><span id="L-181"><a href="#L-181"><span class="linenos">181</span></a>
+</span><span id="L-182"><a href="#L-182"><span class="linenos">182</span></a><span class="sd">    Args:</span>
+</span><span id="L-183"><a href="#L-183"><span class="linenos">183</span></a><span class="sd">        servico (str): Serviço negociado.</span>
+</span><span id="L-184"><a href="#L-184"><span class="linenos">184</span></a><span class="sd">        preco_pedido (float): Preço por unidade pedido pelo vendedor.</span>
+</span><span id="L-185"><a href="#L-185"><span class="linenos">185</span></a><span class="sd">        quantidade (int): Unidades propostas.</span>
+</span><span id="L-186"><a href="#L-186"><span class="linenos">186</span></a><span class="sd">        moeda_disponivel (float): Moeda do bairro ainda não comprometida.</span>
+</span><span id="L-187"><a href="#L-187"><span class="linenos">187</span></a><span class="sd">        rodada (int): Rodada atual, a começar em 1.</span>
+</span><span id="L-188"><a href="#L-188"><span class="linenos">188</span></a><span class="sd">        ultima_oferta (float | None): Última oferta do comprador (None na</span>
+</span><span id="L-189"><a href="#L-189"><span class="linenos">189</span></a><span class="sd">            primeira rodada).</span>
+</span><span id="L-190"><a href="#L-190"><span class="linenos">190</span></a><span class="sd">        max_rodadas (int): Rodadas permitidas.</span>
+</span><span id="L-191"><a href="#L-191"><span class="linenos">191</span></a>
+</span><span id="L-192"><a href="#L-192"><span class="linenos">192</span></a><span class="sd">    Returns:</span>
+</span><span id="L-193"><a href="#L-193"><span class="linenos">193</span></a><span class="sd">        tuple: (decisão, preço por unidade). A decisão é ACEITAR (ao preço</span>
+</span><span id="L-194"><a href="#L-194"><span class="linenos">194</span></a><span class="sd">        pedido), CONTRAPROPOR (com o preço devolvido) ou DESISTIR.</span>
+</span><span id="L-195"><a href="#L-195"><span class="linenos">195</span></a><span class="sd">    """</span>
+</span><span id="L-196"><a href="#L-196"><span class="linenos">196</span></a>    <span class="n">base</span> <span class="o">=</span> <span class="n">preco_base</span><span class="p">(</span><span class="n">servico</span><span class="p">)</span>
+</span><span id="L-197"><a href="#L-197"><span class="linenos">197</span></a>    <span class="n">cabe</span> <span class="o">=</span> <span class="n">preco_pedido</span> <span class="o">*</span> <span class="n">quantidade</span> <span class="o">&lt;=</span> <span class="n">moeda_disponivel</span> <span class="o">+</span> <span class="mf">1e-9</span>     <span class="c1"># regra 8</span>
+</span><span id="L-198"><a href="#L-198"><span class="linenos">198</span></a>    <span class="n">abertura</span> <span class="o">=</span> <span class="n">oferta_inicial_comprador</span><span class="p">(</span><span class="n">servico</span><span class="p">)</span>
+</span><span id="L-199"><a href="#L-199"><span class="linenos">199</span></a>
+</span><span id="L-200"><a href="#L-200"><span class="linenos">200</span></a>    <span class="k">if</span> <span class="n">cabe</span> <span class="ow">and</span> <span class="n">preco_pedido</span> <span class="o">&lt;=</span> <span class="n">abertura</span> <span class="o">+</span> <span class="mf">1e-9</span><span class="p">:</span>
+</span><span id="L-201"><a href="#L-201"><span class="linenos">201</span></a>        <span class="k">return</span> <span class="n">ACEITAR</span><span class="p">,</span> <span class="n">arredondar</span><span class="p">(</span><span class="n">preco_pedido</span><span class="p">)</span>        <span class="c1"># já é barato: aceita</span>
+</span><span id="L-202"><a href="#L-202"><span class="linenos">202</span></a>    <span class="k">if</span> <span class="n">rodada</span> <span class="o">&gt;=</span> <span class="n">max_rodadas</span><span class="p">:</span>
+</span><span id="L-203"><a href="#L-203"><span class="linenos">203</span></a>        <span class="k">if</span> <span class="n">cabe</span> <span class="ow">and</span> <span class="n">preco_pedido</span> <span class="o">&lt;=</span> <span class="n">base</span> <span class="o">+</span> <span class="mf">1e-9</span><span class="p">:</span>
+</span><span id="L-204"><a href="#L-204"><span class="linenos">204</span></a>            <span class="k">return</span> <span class="n">ACEITAR</span><span class="p">,</span> <span class="n">arredondar</span><span class="p">(</span><span class="n">preco_pedido</span><span class="p">)</span>
+</span><span id="L-205"><a href="#L-205"><span class="linenos">205</span></a>        <span class="k">return</span> <span class="n">DESISTIR</span><span class="p">,</span> <span class="kc">None</span>
+</span><span id="L-206"><a href="#L-206"><span class="linenos">206</span></a>    <span class="k">if</span> <span class="n">ultima_oferta</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="L-207"><a href="#L-207"><span class="linenos">207</span></a>        <span class="n">oferta</span> <span class="o">=</span> <span class="n">abertura</span>                               <span class="c1"># regra 9: abre com 60%</span>
+</span><span id="L-208"><a href="#L-208"><span class="linenos">208</span></a>    <span class="k">else</span><span class="p">:</span>
+</span><span id="L-209"><a href="#L-209"><span class="linenos">209</span></a>        <span class="n">oferta</span> <span class="o">=</span> <span class="n">arredondar</span><span class="p">((</span><span class="n">ultima_oferta</span> <span class="o">+</span> <span class="n">preco_pedido</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
+</span><span id="L-210"><a href="#L-210"><span class="linenos">210</span></a>    <span class="k">if</span> <span class="n">oferta</span> <span class="o">*</span> <span class="n">quantidade</span> <span class="o">&gt;</span> <span class="n">moeda_disponivel</span> <span class="o">+</span> <span class="mf">1e-9</span><span class="p">:</span>
+</span><span id="L-211"><a href="#L-211"><span class="linenos">211</span></a>        <span class="c1"># nem a oferta cabe: oferece só o que a moeda permite, se der algo</span>
+</span><span id="L-212"><a href="#L-212"><span class="linenos">212</span></a>        <span class="n">oferta</span> <span class="o">=</span> <span class="n">arredondar</span><span class="p">(</span><span class="n">moeda_disponivel</span> <span class="o">/</span> <span class="n">quantidade</span><span class="p">)</span> <span class="k">if</span> <span class="n">quantidade</span> <span class="k">else</span> <span class="mf">0.0</span>
+</span><span id="L-213"><a href="#L-213"><span class="linenos">213</span></a>        <span class="k">if</span> <span class="n">oferta</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">oferta</span> <span class="o">&lt;=</span> <span class="p">(</span><span class="n">ultima_oferta</span> <span class="ow">or</span> <span class="mi">0</span><span class="p">):</span>
+</span><span id="L-214"><a href="#L-214"><span class="linenos">214</span></a>            <span class="k">return</span> <span class="n">DESISTIR</span><span class="p">,</span> <span class="kc">None</span>
+</span><span id="L-215"><a href="#L-215"><span class="linenos">215</span></a>    <span class="k">return</span> <span class="n">CONTRAPROPOR</span><span class="p">,</span> <span class="n">oferta</span>
 </span></pre></div>
 
 
@@ -544,13 +572,32 @@ vendedor contrapõe 16, comprador oferece 14 (70%) e o vendedor aceita.
 
     </div>
     <a class="headerlink" href="#arredondar"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="arredondar-97"><a href="#arredondar-97"><span class="linenos">97</span></a><span class="k">def</span><span class="w"> </span><span class="nf">arredondar</span><span class="p">(</span><span class="n">preco</span><span class="p">):</span>
-</span><span id="arredondar-98"><a href="#arredondar-98"><span class="linenos">98</span></a><span class="w">    </span><span class="sd">"""Arredonda um preço a duas casas (moeda fictícia)."""</span>
-</span><span id="arredondar-99"><a href="#arredondar-99"><span class="linenos">99</span></a>    <span class="k">return</span> <span class="nb">round</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">preco</span><span class="p">),</span> <span class="mi">2</span><span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="arredondar-97"><a href="#arredondar-97"><span class="linenos"> 97</span></a><span class="k">def</span><span class="w"> </span><span class="nf">arredondar</span><span class="p">(</span><span class="n">preco</span><span class="p">):</span>
+</span><span id="arredondar-98"><a href="#arredondar-98"><span class="linenos"> 98</span></a><span class="w">    </span><span class="sd">"""Arredonda um preço a duas casas (moeda fictícia).</span>
+</span><span id="arredondar-99"><a href="#arredondar-99"><span class="linenos"> 99</span></a>
+</span><span id="arredondar-100"><a href="#arredondar-100"><span class="linenos">100</span></a><span class="sd">    Args:</span>
+</span><span id="arredondar-101"><a href="#arredondar-101"><span class="linenos">101</span></a><span class="sd">        preco (float): Preço a arredondar.</span>
+</span><span id="arredondar-102"><a href="#arredondar-102"><span class="linenos">102</span></a>
+</span><span id="arredondar-103"><a href="#arredondar-103"><span class="linenos">103</span></a><span class="sd">    Returns:</span>
+</span><span id="arredondar-104"><a href="#arredondar-104"><span class="linenos">104</span></a><span class="sd">        float: O preço com duas casas decimais.</span>
+</span><span id="arredondar-105"><a href="#arredondar-105"><span class="linenos">105</span></a><span class="sd">    """</span>
+</span><span id="arredondar-106"><a href="#arredondar-106"><span class="linenos">106</span></a>    <span class="k">return</span> <span class="nb">round</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">preco</span><span class="p">),</span> <span class="mi">2</span><span class="p">)</span>
 </span></pre></div>
 
 
             <div class="docstring"><p>Arredonda um preço a duas casas (moeda fictícia).</p>
+
+<h6 id="arguments">Arguments:</h6>
+
+<ul>
+<li><strong>preco (float):</strong>  Preço a arredondar.</li>
+</ul>
+
+<h6 id="returns">Returns:</h6>
+
+<blockquote>
+  <p>float: O preço com duas casas decimais.</p>
+</blockquote>
 </div>
 
 
@@ -566,13 +613,32 @@ vendedor contrapõe 16, comprador oferece 14 (70%) e o vendedor aceita.
 
     </div>
     <a class="headerlink" href="#preco_minimo_vendedor"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="preco_minimo_vendedor-104"><a href="#preco_minimo_vendedor-104"><span class="linenos">104</span></a><span class="k">def</span><span class="w"> </span><span class="nf">preco_minimo_vendedor</span><span class="p">(</span><span class="n">servico</span><span class="p">):</span>
-</span><span id="preco_minimo_vendedor-105"><a href="#preco_minimo_vendedor-105"><span class="linenos">105</span></a><span class="w">    </span><span class="sd">"""Menor preço por unidade que o vendedor aceita (70% do preço base)."""</span>
-</span><span id="preco_minimo_vendedor-106"><a href="#preco_minimo_vendedor-106"><span class="linenos">106</span></a>    <span class="k">return</span> <span class="n">arredondar</span><span class="p">(</span><span class="n">FRACAO_MINIMA_VENDEDOR</span> <span class="o">*</span> <span class="n">preco_base</span><span class="p">(</span><span class="n">servico</span><span class="p">))</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="preco_minimo_vendedor-111"><a href="#preco_minimo_vendedor-111"><span class="linenos">111</span></a><span class="k">def</span><span class="w"> </span><span class="nf">preco_minimo_vendedor</span><span class="p">(</span><span class="n">servico</span><span class="p">):</span>
+</span><span id="preco_minimo_vendedor-112"><a href="#preco_minimo_vendedor-112"><span class="linenos">112</span></a><span class="w">    </span><span class="sd">"""Menor preço por unidade que o vendedor aceita (70% do preço base).</span>
+</span><span id="preco_minimo_vendedor-113"><a href="#preco_minimo_vendedor-113"><span class="linenos">113</span></a>
+</span><span id="preco_minimo_vendedor-114"><a href="#preco_minimo_vendedor-114"><span class="linenos">114</span></a><span class="sd">    Args:</span>
+</span><span id="preco_minimo_vendedor-115"><a href="#preco_minimo_vendedor-115"><span class="linenos">115</span></a><span class="sd">        servico (str): Serviço negociado, como "bombas".</span>
+</span><span id="preco_minimo_vendedor-116"><a href="#preco_minimo_vendedor-116"><span class="linenos">116</span></a>
+</span><span id="preco_minimo_vendedor-117"><a href="#preco_minimo_vendedor-117"><span class="linenos">117</span></a><span class="sd">    Returns:</span>
+</span><span id="preco_minimo_vendedor-118"><a href="#preco_minimo_vendedor-118"><span class="linenos">118</span></a><span class="sd">        float: O preço mínimo por unidade.</span>
+</span><span id="preco_minimo_vendedor-119"><a href="#preco_minimo_vendedor-119"><span class="linenos">119</span></a><span class="sd">    """</span>
+</span><span id="preco_minimo_vendedor-120"><a href="#preco_minimo_vendedor-120"><span class="linenos">120</span></a>    <span class="k">return</span> <span class="n">arredondar</span><span class="p">(</span><span class="n">FRACAO_MINIMA_VENDEDOR</span> <span class="o">*</span> <span class="n">preco_base</span><span class="p">(</span><span class="n">servico</span><span class="p">))</span>
 </span></pre></div>
 
 
             <div class="docstring"><p>Menor preço por unidade que o vendedor aceita (70% do preço base).</p>
+
+<h6 id="arguments">Arguments:</h6>
+
+<ul>
+<li><strong>servico (str):</strong>  Serviço negociado, como "bombas".</li>
+</ul>
+
+<h6 id="returns">Returns:</h6>
+
+<blockquote>
+  <p>float: O preço mínimo por unidade.</p>
+</blockquote>
 </div>
 
 
@@ -588,13 +654,32 @@ vendedor contrapõe 16, comprador oferece 14 (70%) e o vendedor aceita.
 
     </div>
     <a class="headerlink" href="#preco_pedido_inicial"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="preco_pedido_inicial-109"><a href="#preco_pedido_inicial-109"><span class="linenos">109</span></a><span class="k">def</span><span class="w"> </span><span class="nf">preco_pedido_inicial</span><span class="p">(</span><span class="n">servico</span><span class="p">):</span>
-</span><span id="preco_pedido_inicial-110"><a href="#preco_pedido_inicial-110"><span class="linenos">110</span></a><span class="w">    </span><span class="sd">"""Preço por unidade que o vendedor pede na primeira proposta (o preço base)."""</span>
-</span><span id="preco_pedido_inicial-111"><a href="#preco_pedido_inicial-111"><span class="linenos">111</span></a>    <span class="k">return</span> <span class="n">arredondar</span><span class="p">(</span><span class="n">preco_base</span><span class="p">(</span><span class="n">servico</span><span class="p">))</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="preco_pedido_inicial-123"><a href="#preco_pedido_inicial-123"><span class="linenos">123</span></a><span class="k">def</span><span class="w"> </span><span class="nf">preco_pedido_inicial</span><span class="p">(</span><span class="n">servico</span><span class="p">):</span>
+</span><span id="preco_pedido_inicial-124"><a href="#preco_pedido_inicial-124"><span class="linenos">124</span></a><span class="w">    </span><span class="sd">"""Preço por unidade que o vendedor pede na primeira proposta (o preço base).</span>
+</span><span id="preco_pedido_inicial-125"><a href="#preco_pedido_inicial-125"><span class="linenos">125</span></a>
+</span><span id="preco_pedido_inicial-126"><a href="#preco_pedido_inicial-126"><span class="linenos">126</span></a><span class="sd">    Args:</span>
+</span><span id="preco_pedido_inicial-127"><a href="#preco_pedido_inicial-127"><span class="linenos">127</span></a><span class="sd">        servico (str): Serviço negociado, como "bombas".</span>
+</span><span id="preco_pedido_inicial-128"><a href="#preco_pedido_inicial-128"><span class="linenos">128</span></a>
+</span><span id="preco_pedido_inicial-129"><a href="#preco_pedido_inicial-129"><span class="linenos">129</span></a><span class="sd">    Returns:</span>
+</span><span id="preco_pedido_inicial-130"><a href="#preco_pedido_inicial-130"><span class="linenos">130</span></a><span class="sd">        float: O preço base por unidade.</span>
+</span><span id="preco_pedido_inicial-131"><a href="#preco_pedido_inicial-131"><span class="linenos">131</span></a><span class="sd">    """</span>
+</span><span id="preco_pedido_inicial-132"><a href="#preco_pedido_inicial-132"><span class="linenos">132</span></a>    <span class="k">return</span> <span class="n">arredondar</span><span class="p">(</span><span class="n">preco_base</span><span class="p">(</span><span class="n">servico</span><span class="p">))</span>
 </span></pre></div>
 
 
             <div class="docstring"><p>Preço por unidade que o vendedor pede na primeira proposta (o preço base).</p>
+
+<h6 id="arguments">Arguments:</h6>
+
+<ul>
+<li><strong>servico (str):</strong>  Serviço negociado, como "bombas".</li>
+</ul>
+
+<h6 id="returns">Returns:</h6>
+
+<blockquote>
+  <p>float: O preço base por unidade.</p>
+</blockquote>
 </div>
 
 
@@ -610,17 +695,17 @@ vendedor contrapõe 16, comprador oferece 14 (70%) e o vendedor aceita.
 
     </div>
     <a class="headerlink" href="#vendedor_aceita"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="vendedor_aceita-114"><a href="#vendedor_aceita-114"><span class="linenos">114</span></a><span class="k">def</span><span class="w"> </span><span class="nf">vendedor_aceita</span><span class="p">(</span><span class="n">servico</span><span class="p">,</span> <span class="n">preco</span><span class="p">):</span>
-</span><span id="vendedor_aceita-115"><a href="#vendedor_aceita-115"><span class="linenos">115</span></a><span class="w">    </span><span class="sd">"""Regra 9: o vendedor aceita a partir de 70% do preço base.</span>
-</span><span id="vendedor_aceita-116"><a href="#vendedor_aceita-116"><span class="linenos">116</span></a>
-</span><span id="vendedor_aceita-117"><a href="#vendedor_aceita-117"><span class="linenos">117</span></a><span class="sd">    Args:</span>
-</span><span id="vendedor_aceita-118"><a href="#vendedor_aceita-118"><span class="linenos">118</span></a><span class="sd">        servico (str): Serviço negociado.</span>
-</span><span id="vendedor_aceita-119"><a href="#vendedor_aceita-119"><span class="linenos">119</span></a><span class="sd">        preco (float): Preço por unidade oferecido pelo comprador.</span>
-</span><span id="vendedor_aceita-120"><a href="#vendedor_aceita-120"><span class="linenos">120</span></a>
-</span><span id="vendedor_aceita-121"><a href="#vendedor_aceita-121"><span class="linenos">121</span></a><span class="sd">    Returns:</span>
-</span><span id="vendedor_aceita-122"><a href="#vendedor_aceita-122"><span class="linenos">122</span></a><span class="sd">        bool: Se o preço é aceite.</span>
-</span><span id="vendedor_aceita-123"><a href="#vendedor_aceita-123"><span class="linenos">123</span></a><span class="sd">    """</span>
-</span><span id="vendedor_aceita-124"><a href="#vendedor_aceita-124"><span class="linenos">124</span></a>    <span class="k">return</span> <span class="n">preco</span> <span class="o">&gt;=</span> <span class="n">preco_minimo_vendedor</span><span class="p">(</span><span class="n">servico</span><span class="p">)</span> <span class="o">-</span> <span class="mf">1e-9</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="vendedor_aceita-135"><a href="#vendedor_aceita-135"><span class="linenos">135</span></a><span class="k">def</span><span class="w"> </span><span class="nf">vendedor_aceita</span><span class="p">(</span><span class="n">servico</span><span class="p">,</span> <span class="n">preco</span><span class="p">):</span>
+</span><span id="vendedor_aceita-136"><a href="#vendedor_aceita-136"><span class="linenos">136</span></a><span class="w">    </span><span class="sd">"""Regra 9: o vendedor aceita a partir de 70% do preço base.</span>
+</span><span id="vendedor_aceita-137"><a href="#vendedor_aceita-137"><span class="linenos">137</span></a>
+</span><span id="vendedor_aceita-138"><a href="#vendedor_aceita-138"><span class="linenos">138</span></a><span class="sd">    Args:</span>
+</span><span id="vendedor_aceita-139"><a href="#vendedor_aceita-139"><span class="linenos">139</span></a><span class="sd">        servico (str): Serviço negociado.</span>
+</span><span id="vendedor_aceita-140"><a href="#vendedor_aceita-140"><span class="linenos">140</span></a><span class="sd">        preco (float): Preço por unidade oferecido pelo comprador.</span>
+</span><span id="vendedor_aceita-141"><a href="#vendedor_aceita-141"><span class="linenos">141</span></a>
+</span><span id="vendedor_aceita-142"><a href="#vendedor_aceita-142"><span class="linenos">142</span></a><span class="sd">    Returns:</span>
+</span><span id="vendedor_aceita-143"><a href="#vendedor_aceita-143"><span class="linenos">143</span></a><span class="sd">        bool: Se o preço é aceite.</span>
+</span><span id="vendedor_aceita-144"><a href="#vendedor_aceita-144"><span class="linenos">144</span></a><span class="sd">    """</span>
+</span><span id="vendedor_aceita-145"><a href="#vendedor_aceita-145"><span class="linenos">145</span></a>    <span class="k">return</span> <span class="n">preco</span> <span class="o">&gt;=</span> <span class="n">preco_minimo_vendedor</span><span class="p">(</span><span class="n">servico</span><span class="p">)</span> <span class="o">-</span> <span class="mf">1e-9</span>
 </span></pre></div>
 
 
@@ -653,21 +738,21 @@ vendedor contrapõe 16, comprador oferece 14 (70%) e o vendedor aceita.
 
     </div>
     <a class="headerlink" href="#contraproposta_vendedor"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="contraproposta_vendedor-127"><a href="#contraproposta_vendedor-127"><span class="linenos">127</span></a><span class="k">def</span><span class="w"> </span><span class="nf">contraproposta_vendedor</span><span class="p">(</span><span class="n">servico</span><span class="p">,</span> <span class="n">pedido_anterior</span><span class="p">,</span> <span class="n">oferta</span><span class="p">):</span>
-</span><span id="contraproposta_vendedor-128"><a href="#contraproposta_vendedor-128"><span class="linenos">128</span></a><span class="w">    </span><span class="sd">"""Novo preço do vendedor quando recusa a oferta do comprador.</span>
-</span><span id="contraproposta_vendedor-129"><a href="#contraproposta_vendedor-129"><span class="linenos">129</span></a>
-</span><span id="contraproposta_vendedor-130"><a href="#contraproposta_vendedor-130"><span class="linenos">130</span></a><span class="sd">    Ponto médio entre o que pedia e a oferta, nunca abaixo de 70% do base.</span>
-</span><span id="contraproposta_vendedor-131"><a href="#contraproposta_vendedor-131"><span class="linenos">131</span></a>
-</span><span id="contraproposta_vendedor-132"><a href="#contraproposta_vendedor-132"><span class="linenos">132</span></a><span class="sd">    Args:</span>
-</span><span id="contraproposta_vendedor-133"><a href="#contraproposta_vendedor-133"><span class="linenos">133</span></a><span class="sd">        servico (str): Serviço negociado.</span>
-</span><span id="contraproposta_vendedor-134"><a href="#contraproposta_vendedor-134"><span class="linenos">134</span></a><span class="sd">        pedido_anterior (float): Preço que o vendedor pedia.</span>
-</span><span id="contraproposta_vendedor-135"><a href="#contraproposta_vendedor-135"><span class="linenos">135</span></a><span class="sd">        oferta (float): Preço oferecido pelo comprador.</span>
-</span><span id="contraproposta_vendedor-136"><a href="#contraproposta_vendedor-136"><span class="linenos">136</span></a>
-</span><span id="contraproposta_vendedor-137"><a href="#contraproposta_vendedor-137"><span class="linenos">137</span></a><span class="sd">    Returns:</span>
-</span><span id="contraproposta_vendedor-138"><a href="#contraproposta_vendedor-138"><span class="linenos">138</span></a><span class="sd">        float: O novo preço pedido, por unidade.</span>
-</span><span id="contraproposta_vendedor-139"><a href="#contraproposta_vendedor-139"><span class="linenos">139</span></a><span class="sd">    """</span>
-</span><span id="contraproposta_vendedor-140"><a href="#contraproposta_vendedor-140"><span class="linenos">140</span></a>    <span class="k">return</span> <span class="n">arredondar</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">preco_minimo_vendedor</span><span class="p">(</span><span class="n">servico</span><span class="p">),</span>
-</span><span id="contraproposta_vendedor-141"><a href="#contraproposta_vendedor-141"><span class="linenos">141</span></a>                          <span class="p">(</span><span class="n">pedido_anterior</span> <span class="o">+</span> <span class="n">oferta</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">))</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="contraproposta_vendedor-148"><a href="#contraproposta_vendedor-148"><span class="linenos">148</span></a><span class="k">def</span><span class="w"> </span><span class="nf">contraproposta_vendedor</span><span class="p">(</span><span class="n">servico</span><span class="p">,</span> <span class="n">pedido_anterior</span><span class="p">,</span> <span class="n">oferta</span><span class="p">):</span>
+</span><span id="contraproposta_vendedor-149"><a href="#contraproposta_vendedor-149"><span class="linenos">149</span></a><span class="w">    </span><span class="sd">"""Novo preço do vendedor quando recusa a oferta do comprador.</span>
+</span><span id="contraproposta_vendedor-150"><a href="#contraproposta_vendedor-150"><span class="linenos">150</span></a>
+</span><span id="contraproposta_vendedor-151"><a href="#contraproposta_vendedor-151"><span class="linenos">151</span></a><span class="sd">    Ponto médio entre o que pedia e a oferta, nunca abaixo de 70% do base.</span>
+</span><span id="contraproposta_vendedor-152"><a href="#contraproposta_vendedor-152"><span class="linenos">152</span></a>
+</span><span id="contraproposta_vendedor-153"><a href="#contraproposta_vendedor-153"><span class="linenos">153</span></a><span class="sd">    Args:</span>
+</span><span id="contraproposta_vendedor-154"><a href="#contraproposta_vendedor-154"><span class="linenos">154</span></a><span class="sd">        servico (str): Serviço negociado.</span>
+</span><span id="contraproposta_vendedor-155"><a href="#contraproposta_vendedor-155"><span class="linenos">155</span></a><span class="sd">        pedido_anterior (float): Preço que o vendedor pedia.</span>
+</span><span id="contraproposta_vendedor-156"><a href="#contraproposta_vendedor-156"><span class="linenos">156</span></a><span class="sd">        oferta (float): Preço oferecido pelo comprador.</span>
+</span><span id="contraproposta_vendedor-157"><a href="#contraproposta_vendedor-157"><span class="linenos">157</span></a>
+</span><span id="contraproposta_vendedor-158"><a href="#contraproposta_vendedor-158"><span class="linenos">158</span></a><span class="sd">    Returns:</span>
+</span><span id="contraproposta_vendedor-159"><a href="#contraproposta_vendedor-159"><span class="linenos">159</span></a><span class="sd">        float: O novo preço pedido, por unidade.</span>
+</span><span id="contraproposta_vendedor-160"><a href="#contraproposta_vendedor-160"><span class="linenos">160</span></a><span class="sd">    """</span>
+</span><span id="contraproposta_vendedor-161"><a href="#contraproposta_vendedor-161"><span class="linenos">161</span></a>    <span class="k">return</span> <span class="n">arredondar</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">preco_minimo_vendedor</span><span class="p">(</span><span class="n">servico</span><span class="p">),</span>
+</span><span id="contraproposta_vendedor-162"><a href="#contraproposta_vendedor-162"><span class="linenos">162</span></a>                          <span class="p">(</span><span class="n">pedido_anterior</span> <span class="o">+</span> <span class="n">oferta</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">))</span>
 </span></pre></div>
 
 
@@ -703,13 +788,32 @@ vendedor contrapõe 16, comprador oferece 14 (70%) e o vendedor aceita.
 
     </div>
     <a class="headerlink" href="#oferta_inicial_comprador"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="oferta_inicial_comprador-146"><a href="#oferta_inicial_comprador-146"><span class="linenos">146</span></a><span class="k">def</span><span class="w"> </span><span class="nf">oferta_inicial_comprador</span><span class="p">(</span><span class="n">servico</span><span class="p">):</span>
-</span><span id="oferta_inicial_comprador-147"><a href="#oferta_inicial_comprador-147"><span class="linenos">147</span></a><span class="w">    </span><span class="sd">"""Primeira oferta do comprador: 60% do preço base, por unidade."""</span>
-</span><span id="oferta_inicial_comprador-148"><a href="#oferta_inicial_comprador-148"><span class="linenos">148</span></a>    <span class="k">return</span> <span class="n">arredondar</span><span class="p">(</span><span class="n">FRACAO_ABERTURA_COMPRADOR</span> <span class="o">*</span> <span class="n">preco_base</span><span class="p">(</span><span class="n">servico</span><span class="p">))</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="oferta_inicial_comprador-167"><a href="#oferta_inicial_comprador-167"><span class="linenos">167</span></a><span class="k">def</span><span class="w"> </span><span class="nf">oferta_inicial_comprador</span><span class="p">(</span><span class="n">servico</span><span class="p">):</span>
+</span><span id="oferta_inicial_comprador-168"><a href="#oferta_inicial_comprador-168"><span class="linenos">168</span></a><span class="w">    </span><span class="sd">"""Primeira oferta do comprador: 60% do preço base, por unidade.</span>
+</span><span id="oferta_inicial_comprador-169"><a href="#oferta_inicial_comprador-169"><span class="linenos">169</span></a>
+</span><span id="oferta_inicial_comprador-170"><a href="#oferta_inicial_comprador-170"><span class="linenos">170</span></a><span class="sd">    Args:</span>
+</span><span id="oferta_inicial_comprador-171"><a href="#oferta_inicial_comprador-171"><span class="linenos">171</span></a><span class="sd">        servico (str): Serviço negociado, como "bombas".</span>
+</span><span id="oferta_inicial_comprador-172"><a href="#oferta_inicial_comprador-172"><span class="linenos">172</span></a>
+</span><span id="oferta_inicial_comprador-173"><a href="#oferta_inicial_comprador-173"><span class="linenos">173</span></a><span class="sd">    Returns:</span>
+</span><span id="oferta_inicial_comprador-174"><a href="#oferta_inicial_comprador-174"><span class="linenos">174</span></a><span class="sd">        float: A oferta de abertura por unidade.</span>
+</span><span id="oferta_inicial_comprador-175"><a href="#oferta_inicial_comprador-175"><span class="linenos">175</span></a><span class="sd">    """</span>
+</span><span id="oferta_inicial_comprador-176"><a href="#oferta_inicial_comprador-176"><span class="linenos">176</span></a>    <span class="k">return</span> <span class="n">arredondar</span><span class="p">(</span><span class="n">FRACAO_ABERTURA_COMPRADOR</span> <span class="o">*</span> <span class="n">preco_base</span><span class="p">(</span><span class="n">servico</span><span class="p">))</span>
 </span></pre></div>
 
 
             <div class="docstring"><p>Primeira oferta do comprador: 60% do preço base, por unidade.</p>
+
+<h6 id="arguments">Arguments:</h6>
+
+<ul>
+<li><strong>servico (str):</strong>  Serviço negociado, como "bombas".</li>
+</ul>
+
+<h6 id="returns">Returns:</h6>
+
+<blockquote>
+  <p>float: A oferta de abertura por unidade.</p>
+</blockquote>
 </div>
 
 
@@ -725,44 +829,44 @@ vendedor contrapõe 16, comprador oferece 14 (70%) e o vendedor aceita.
 
     </div>
     <a class="headerlink" href="#decisao_comprador"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="decisao_comprador-151"><a href="#decisao_comprador-151"><span class="linenos">151</span></a><span class="k">def</span><span class="w"> </span><span class="nf">decisao_comprador</span><span class="p">(</span><span class="n">servico</span><span class="p">,</span> <span class="n">preco_pedido</span><span class="p">,</span> <span class="n">quantidade</span><span class="p">,</span> <span class="n">moeda_disponivel</span><span class="p">,</span>
-</span><span id="decisao_comprador-152"><a href="#decisao_comprador-152"><span class="linenos">152</span></a>                      <span class="n">rodada</span><span class="p">,</span> <span class="n">ultima_oferta</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">max_rodadas</span><span class="o">=</span><span class="n">MAX_RODADAS_CN</span><span class="p">):</span>
-</span><span id="decisao_comprador-153"><a href="#decisao_comprador-153"><span class="linenos">153</span></a><span class="w">    </span><span class="sd">"""O que o comprador faz perante o preço pedido pelo vendedor.</span>
-</span><span id="decisao_comprador-154"><a href="#decisao_comprador-154"><span class="linenos">154</span></a>
-</span><span id="decisao_comprador-155"><a href="#decisao_comprador-155"><span class="linenos">155</span></a><span class="sd">    Args:</span>
-</span><span id="decisao_comprador-156"><a href="#decisao_comprador-156"><span class="linenos">156</span></a><span class="sd">        servico (str): Serviço negociado.</span>
-</span><span id="decisao_comprador-157"><a href="#decisao_comprador-157"><span class="linenos">157</span></a><span class="sd">        preco_pedido (float): Preço por unidade pedido pelo vendedor.</span>
-</span><span id="decisao_comprador-158"><a href="#decisao_comprador-158"><span class="linenos">158</span></a><span class="sd">        quantidade (int): Unidades propostas.</span>
-</span><span id="decisao_comprador-159"><a href="#decisao_comprador-159"><span class="linenos">159</span></a><span class="sd">        moeda_disponivel (float): Moeda do bairro ainda não comprometida.</span>
-</span><span id="decisao_comprador-160"><a href="#decisao_comprador-160"><span class="linenos">160</span></a><span class="sd">        rodada (int): Rodada atual, a começar em 1.</span>
-</span><span id="decisao_comprador-161"><a href="#decisao_comprador-161"><span class="linenos">161</span></a><span class="sd">        ultima_oferta (float | None): Última oferta do comprador (None na</span>
-</span><span id="decisao_comprador-162"><a href="#decisao_comprador-162"><span class="linenos">162</span></a><span class="sd">            primeira rodada).</span>
-</span><span id="decisao_comprador-163"><a href="#decisao_comprador-163"><span class="linenos">163</span></a><span class="sd">        max_rodadas (int): Rodadas permitidas.</span>
-</span><span id="decisao_comprador-164"><a href="#decisao_comprador-164"><span class="linenos">164</span></a>
-</span><span id="decisao_comprador-165"><a href="#decisao_comprador-165"><span class="linenos">165</span></a><span class="sd">    Returns:</span>
-</span><span id="decisao_comprador-166"><a href="#decisao_comprador-166"><span class="linenos">166</span></a><span class="sd">        tuple: (decisão, preço por unidade). A decisão é ACEITAR (ao preço</span>
-</span><span id="decisao_comprador-167"><a href="#decisao_comprador-167"><span class="linenos">167</span></a><span class="sd">        pedido), CONTRAPROPOR (com o preço devolvido) ou DESISTIR.</span>
-</span><span id="decisao_comprador-168"><a href="#decisao_comprador-168"><span class="linenos">168</span></a><span class="sd">    """</span>
-</span><span id="decisao_comprador-169"><a href="#decisao_comprador-169"><span class="linenos">169</span></a>    <span class="n">base</span> <span class="o">=</span> <span class="n">preco_base</span><span class="p">(</span><span class="n">servico</span><span class="p">)</span>
-</span><span id="decisao_comprador-170"><a href="#decisao_comprador-170"><span class="linenos">170</span></a>    <span class="n">cabe</span> <span class="o">=</span> <span class="n">preco_pedido</span> <span class="o">*</span> <span class="n">quantidade</span> <span class="o">&lt;=</span> <span class="n">moeda_disponivel</span> <span class="o">+</span> <span class="mf">1e-9</span>     <span class="c1"># regra 8</span>
-</span><span id="decisao_comprador-171"><a href="#decisao_comprador-171"><span class="linenos">171</span></a>    <span class="n">abertura</span> <span class="o">=</span> <span class="n">oferta_inicial_comprador</span><span class="p">(</span><span class="n">servico</span><span class="p">)</span>
-</span><span id="decisao_comprador-172"><a href="#decisao_comprador-172"><span class="linenos">172</span></a>
-</span><span id="decisao_comprador-173"><a href="#decisao_comprador-173"><span class="linenos">173</span></a>    <span class="k">if</span> <span class="n">cabe</span> <span class="ow">and</span> <span class="n">preco_pedido</span> <span class="o">&lt;=</span> <span class="n">abertura</span> <span class="o">+</span> <span class="mf">1e-9</span><span class="p">:</span>
-</span><span id="decisao_comprador-174"><a href="#decisao_comprador-174"><span class="linenos">174</span></a>        <span class="k">return</span> <span class="n">ACEITAR</span><span class="p">,</span> <span class="n">arredondar</span><span class="p">(</span><span class="n">preco_pedido</span><span class="p">)</span>        <span class="c1"># já é barato: aceita</span>
-</span><span id="decisao_comprador-175"><a href="#decisao_comprador-175"><span class="linenos">175</span></a>    <span class="k">if</span> <span class="n">rodada</span> <span class="o">&gt;=</span> <span class="n">max_rodadas</span><span class="p">:</span>
-</span><span id="decisao_comprador-176"><a href="#decisao_comprador-176"><span class="linenos">176</span></a>        <span class="k">if</span> <span class="n">cabe</span> <span class="ow">and</span> <span class="n">preco_pedido</span> <span class="o">&lt;=</span> <span class="n">base</span> <span class="o">+</span> <span class="mf">1e-9</span><span class="p">:</span>
-</span><span id="decisao_comprador-177"><a href="#decisao_comprador-177"><span class="linenos">177</span></a>            <span class="k">return</span> <span class="n">ACEITAR</span><span class="p">,</span> <span class="n">arredondar</span><span class="p">(</span><span class="n">preco_pedido</span><span class="p">)</span>
-</span><span id="decisao_comprador-178"><a href="#decisao_comprador-178"><span class="linenos">178</span></a>        <span class="k">return</span> <span class="n">DESISTIR</span><span class="p">,</span> <span class="kc">None</span>
-</span><span id="decisao_comprador-179"><a href="#decisao_comprador-179"><span class="linenos">179</span></a>    <span class="k">if</span> <span class="n">ultima_oferta</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="decisao_comprador-180"><a href="#decisao_comprador-180"><span class="linenos">180</span></a>        <span class="n">oferta</span> <span class="o">=</span> <span class="n">abertura</span>                               <span class="c1"># regra 9: abre com 60%</span>
-</span><span id="decisao_comprador-181"><a href="#decisao_comprador-181"><span class="linenos">181</span></a>    <span class="k">else</span><span class="p">:</span>
-</span><span id="decisao_comprador-182"><a href="#decisao_comprador-182"><span class="linenos">182</span></a>        <span class="n">oferta</span> <span class="o">=</span> <span class="n">arredondar</span><span class="p">((</span><span class="n">ultima_oferta</span> <span class="o">+</span> <span class="n">preco_pedido</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
-</span><span id="decisao_comprador-183"><a href="#decisao_comprador-183"><span class="linenos">183</span></a>    <span class="k">if</span> <span class="n">oferta</span> <span class="o">*</span> <span class="n">quantidade</span> <span class="o">&gt;</span> <span class="n">moeda_disponivel</span> <span class="o">+</span> <span class="mf">1e-9</span><span class="p">:</span>
-</span><span id="decisao_comprador-184"><a href="#decisao_comprador-184"><span class="linenos">184</span></a>        <span class="c1"># nem a oferta cabe: oferece só o que a moeda permite, se der algo</span>
-</span><span id="decisao_comprador-185"><a href="#decisao_comprador-185"><span class="linenos">185</span></a>        <span class="n">oferta</span> <span class="o">=</span> <span class="n">arredondar</span><span class="p">(</span><span class="n">moeda_disponivel</span> <span class="o">/</span> <span class="n">quantidade</span><span class="p">)</span> <span class="k">if</span> <span class="n">quantidade</span> <span class="k">else</span> <span class="mf">0.0</span>
-</span><span id="decisao_comprador-186"><a href="#decisao_comprador-186"><span class="linenos">186</span></a>        <span class="k">if</span> <span class="n">oferta</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">oferta</span> <span class="o">&lt;=</span> <span class="p">(</span><span class="n">ultima_oferta</span> <span class="ow">or</span> <span class="mi">0</span><span class="p">):</span>
-</span><span id="decisao_comprador-187"><a href="#decisao_comprador-187"><span class="linenos">187</span></a>            <span class="k">return</span> <span class="n">DESISTIR</span><span class="p">,</span> <span class="kc">None</span>
-</span><span id="decisao_comprador-188"><a href="#decisao_comprador-188"><span class="linenos">188</span></a>    <span class="k">return</span> <span class="n">CONTRAPROPOR</span><span class="p">,</span> <span class="n">oferta</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="decisao_comprador-179"><a href="#decisao_comprador-179"><span class="linenos">179</span></a><span class="k">def</span><span class="w"> </span><span class="nf">decisao_comprador</span><span class="p">(</span><span class="n">servico</span><span class="p">,</span> <span class="n">preco_pedido</span><span class="p">,</span> <span class="n">quantidade</span><span class="p">,</span> <span class="n">moeda_disponivel</span><span class="p">,</span>
+</span><span id="decisao_comprador-180"><a href="#decisao_comprador-180"><span class="linenos">180</span></a>                      <span class="n">rodada</span><span class="p">,</span> <span class="n">ultima_oferta</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">max_rodadas</span><span class="o">=</span><span class="n">MAX_RODADAS_CN</span><span class="p">):</span>
+</span><span id="decisao_comprador-181"><a href="#decisao_comprador-181"><span class="linenos">181</span></a><span class="w">    </span><span class="sd">"""O que o comprador faz perante o preço pedido pelo vendedor.</span>
+</span><span id="decisao_comprador-182"><a href="#decisao_comprador-182"><span class="linenos">182</span></a>
+</span><span id="decisao_comprador-183"><a href="#decisao_comprador-183"><span class="linenos">183</span></a><span class="sd">    Args:</span>
+</span><span id="decisao_comprador-184"><a href="#decisao_comprador-184"><span class="linenos">184</span></a><span class="sd">        servico (str): Serviço negociado.</span>
+</span><span id="decisao_comprador-185"><a href="#decisao_comprador-185"><span class="linenos">185</span></a><span class="sd">        preco_pedido (float): Preço por unidade pedido pelo vendedor.</span>
+</span><span id="decisao_comprador-186"><a href="#decisao_comprador-186"><span class="linenos">186</span></a><span class="sd">        quantidade (int): Unidades propostas.</span>
+</span><span id="decisao_comprador-187"><a href="#decisao_comprador-187"><span class="linenos">187</span></a><span class="sd">        moeda_disponivel (float): Moeda do bairro ainda não comprometida.</span>
+</span><span id="decisao_comprador-188"><a href="#decisao_comprador-188"><span class="linenos">188</span></a><span class="sd">        rodada (int): Rodada atual, a começar em 1.</span>
+</span><span id="decisao_comprador-189"><a href="#decisao_comprador-189"><span class="linenos">189</span></a><span class="sd">        ultima_oferta (float | None): Última oferta do comprador (None na</span>
+</span><span id="decisao_comprador-190"><a href="#decisao_comprador-190"><span class="linenos">190</span></a><span class="sd">            primeira rodada).</span>
+</span><span id="decisao_comprador-191"><a href="#decisao_comprador-191"><span class="linenos">191</span></a><span class="sd">        max_rodadas (int): Rodadas permitidas.</span>
+</span><span id="decisao_comprador-192"><a href="#decisao_comprador-192"><span class="linenos">192</span></a>
+</span><span id="decisao_comprador-193"><a href="#decisao_comprador-193"><span class="linenos">193</span></a><span class="sd">    Returns:</span>
+</span><span id="decisao_comprador-194"><a href="#decisao_comprador-194"><span class="linenos">194</span></a><span class="sd">        tuple: (decisão, preço por unidade). A decisão é ACEITAR (ao preço</span>
+</span><span id="decisao_comprador-195"><a href="#decisao_comprador-195"><span class="linenos">195</span></a><span class="sd">        pedido), CONTRAPROPOR (com o preço devolvido) ou DESISTIR.</span>
+</span><span id="decisao_comprador-196"><a href="#decisao_comprador-196"><span class="linenos">196</span></a><span class="sd">    """</span>
+</span><span id="decisao_comprador-197"><a href="#decisao_comprador-197"><span class="linenos">197</span></a>    <span class="n">base</span> <span class="o">=</span> <span class="n">preco_base</span><span class="p">(</span><span class="n">servico</span><span class="p">)</span>
+</span><span id="decisao_comprador-198"><a href="#decisao_comprador-198"><span class="linenos">198</span></a>    <span class="n">cabe</span> <span class="o">=</span> <span class="n">preco_pedido</span> <span class="o">*</span> <span class="n">quantidade</span> <span class="o">&lt;=</span> <span class="n">moeda_disponivel</span> <span class="o">+</span> <span class="mf">1e-9</span>     <span class="c1"># regra 8</span>
+</span><span id="decisao_comprador-199"><a href="#decisao_comprador-199"><span class="linenos">199</span></a>    <span class="n">abertura</span> <span class="o">=</span> <span class="n">oferta_inicial_comprador</span><span class="p">(</span><span class="n">servico</span><span class="p">)</span>
+</span><span id="decisao_comprador-200"><a href="#decisao_comprador-200"><span class="linenos">200</span></a>
+</span><span id="decisao_comprador-201"><a href="#decisao_comprador-201"><span class="linenos">201</span></a>    <span class="k">if</span> <span class="n">cabe</span> <span class="ow">and</span> <span class="n">preco_pedido</span> <span class="o">&lt;=</span> <span class="n">abertura</span> <span class="o">+</span> <span class="mf">1e-9</span><span class="p">:</span>
+</span><span id="decisao_comprador-202"><a href="#decisao_comprador-202"><span class="linenos">202</span></a>        <span class="k">return</span> <span class="n">ACEITAR</span><span class="p">,</span> <span class="n">arredondar</span><span class="p">(</span><span class="n">preco_pedido</span><span class="p">)</span>        <span class="c1"># já é barato: aceita</span>
+</span><span id="decisao_comprador-203"><a href="#decisao_comprador-203"><span class="linenos">203</span></a>    <span class="k">if</span> <span class="n">rodada</span> <span class="o">&gt;=</span> <span class="n">max_rodadas</span><span class="p">:</span>
+</span><span id="decisao_comprador-204"><a href="#decisao_comprador-204"><span class="linenos">204</span></a>        <span class="k">if</span> <span class="n">cabe</span> <span class="ow">and</span> <span class="n">preco_pedido</span> <span class="o">&lt;=</span> <span class="n">base</span> <span class="o">+</span> <span class="mf">1e-9</span><span class="p">:</span>
+</span><span id="decisao_comprador-205"><a href="#decisao_comprador-205"><span class="linenos">205</span></a>            <span class="k">return</span> <span class="n">ACEITAR</span><span class="p">,</span> <span class="n">arredondar</span><span class="p">(</span><span class="n">preco_pedido</span><span class="p">)</span>
+</span><span id="decisao_comprador-206"><a href="#decisao_comprador-206"><span class="linenos">206</span></a>        <span class="k">return</span> <span class="n">DESISTIR</span><span class="p">,</span> <span class="kc">None</span>
+</span><span id="decisao_comprador-207"><a href="#decisao_comprador-207"><span class="linenos">207</span></a>    <span class="k">if</span> <span class="n">ultima_oferta</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="decisao_comprador-208"><a href="#decisao_comprador-208"><span class="linenos">208</span></a>        <span class="n">oferta</span> <span class="o">=</span> <span class="n">abertura</span>                               <span class="c1"># regra 9: abre com 60%</span>
+</span><span id="decisao_comprador-209"><a href="#decisao_comprador-209"><span class="linenos">209</span></a>    <span class="k">else</span><span class="p">:</span>
+</span><span id="decisao_comprador-210"><a href="#decisao_comprador-210"><span class="linenos">210</span></a>        <span class="n">oferta</span> <span class="o">=</span> <span class="n">arredondar</span><span class="p">((</span><span class="n">ultima_oferta</span> <span class="o">+</span> <span class="n">preco_pedido</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
+</span><span id="decisao_comprador-211"><a href="#decisao_comprador-211"><span class="linenos">211</span></a>    <span class="k">if</span> <span class="n">oferta</span> <span class="o">*</span> <span class="n">quantidade</span> <span class="o">&gt;</span> <span class="n">moeda_disponivel</span> <span class="o">+</span> <span class="mf">1e-9</span><span class="p">:</span>
+</span><span id="decisao_comprador-212"><a href="#decisao_comprador-212"><span class="linenos">212</span></a>        <span class="c1"># nem a oferta cabe: oferece só o que a moeda permite, se der algo</span>
+</span><span id="decisao_comprador-213"><a href="#decisao_comprador-213"><span class="linenos">213</span></a>        <span class="n">oferta</span> <span class="o">=</span> <span class="n">arredondar</span><span class="p">(</span><span class="n">moeda_disponivel</span> <span class="o">/</span> <span class="n">quantidade</span><span class="p">)</span> <span class="k">if</span> <span class="n">quantidade</span> <span class="k">else</span> <span class="mf">0.0</span>
+</span><span id="decisao_comprador-214"><a href="#decisao_comprador-214"><span class="linenos">214</span></a>        <span class="k">if</span> <span class="n">oferta</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">oferta</span> <span class="o">&lt;=</span> <span class="p">(</span><span class="n">ultima_oferta</span> <span class="ow">or</span> <span class="mi">0</span><span class="p">):</span>
+</span><span id="decisao_comprador-215"><a href="#decisao_comprador-215"><span class="linenos">215</span></a>            <span class="k">return</span> <span class="n">DESISTIR</span><span class="p">,</span> <span class="kc">None</span>
+</span><span id="decisao_comprador-216"><a href="#decisao_comprador-216"><span class="linenos">216</span></a>    <span class="k">return</span> <span class="n">CONTRAPROPOR</span><span class="p">,</span> <span class="n">oferta</span>
 </span></pre></div>
 
 

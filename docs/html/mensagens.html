@@ -402,19 +402,27 @@ módulo, e os testes, funcionam sem o SPADE instalado.</p>
 </span><span id="L-217"><a href="#L-217"><span class="linenos">217</span></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">spade.template</span><span class="w"> </span><span class="kn">import</span> <span class="n">Template</span>
 </span><span id="L-218"><a href="#L-218"><span class="linenos">218</span></a>
 </span><span id="L-219"><a href="#L-219"><span class="linenos">219</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">um</span><span class="p">(</span><span class="n">performativa</span><span class="p">):</span>
-</span><span id="L-220"><a href="#L-220"><span class="linenos">220</span></a><span class="w">        </span><span class="sd">"""Template de um só protocolo, com uma performativa e o thread, se houver."""</span>
-</span><span id="L-221"><a href="#L-221"><span class="linenos">221</span></a>        <span class="n">t</span> <span class="o">=</span> <span class="n">Template</span><span class="p">()</span>
-</span><span id="L-222"><a href="#L-222"><span class="linenos">222</span></a>        <span class="n">t</span><span class="o">.</span><span class="n">set_metadata</span><span class="p">(</span><span class="s2">"protocol"</span><span class="p">,</span> <span class="n">protocolo</span><span class="p">)</span>
-</span><span id="L-223"><a href="#L-223"><span class="linenos">223</span></a>        <span class="k">if</span> <span class="n">performativa</span><span class="p">:</span>
-</span><span id="L-224"><a href="#L-224"><span class="linenos">224</span></a>            <span class="n">t</span><span class="o">.</span><span class="n">set_metadata</span><span class="p">(</span><span class="s2">"performative"</span><span class="p">,</span> <span class="n">performativa</span><span class="p">)</span>
-</span><span id="L-225"><a href="#L-225"><span class="linenos">225</span></a>        <span class="k">if</span> <span class="n">thread</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="L-226"><a href="#L-226"><span class="linenos">226</span></a>            <span class="n">t</span><span class="o">.</span><span class="n">thread</span> <span class="o">=</span> <span class="n">thread</span>
-</span><span id="L-227"><a href="#L-227"><span class="linenos">227</span></a>        <span class="k">return</span> <span class="n">t</span>
-</span><span id="L-228"><a href="#L-228"><span class="linenos">228</span></a>
-</span><span id="L-229"><a href="#L-229"><span class="linenos">229</span></a>    <span class="n">resultado</span> <span class="o">=</span> <span class="n">um</span><span class="p">(</span><span class="n">performativas</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">performativas</span> <span class="k">else</span> <span class="kc">None</span><span class="p">)</span>
-</span><span id="L-230"><a href="#L-230"><span class="linenos">230</span></a>    <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">performativas</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
-</span><span id="L-231"><a href="#L-231"><span class="linenos">231</span></a>        <span class="n">resultado</span> <span class="o">=</span> <span class="n">resultado</span> <span class="o">|</span> <span class="n">um</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>      <span class="c1"># OU entre templates (ver PDF do SPADE)</span>
-</span><span id="L-232"><a href="#L-232"><span class="linenos">232</span></a>    <span class="k">return</span> <span class="n">resultado</span>
+</span><span id="L-220"><a href="#L-220"><span class="linenos">220</span></a><span class="w">        </span><span class="sd">"""Template de um só protocolo, com uma performativa e o thread, se houver.</span>
+</span><span id="L-221"><a href="#L-221"><span class="linenos">221</span></a>
+</span><span id="L-222"><a href="#L-222"><span class="linenos">222</span></a><span class="sd">        Args:</span>
+</span><span id="L-223"><a href="#L-223"><span class="linenos">223</span></a><span class="sd">            performativa (str | None): A performativa a exigir, ou None para</span>
+</span><span id="L-224"><a href="#L-224"><span class="linenos">224</span></a><span class="sd">                aceitar qualquer uma.</span>
+</span><span id="L-225"><a href="#L-225"><span class="linenos">225</span></a>
+</span><span id="L-226"><a href="#L-226"><span class="linenos">226</span></a><span class="sd">        Returns:</span>
+</span><span id="L-227"><a href="#L-227"><span class="linenos">227</span></a><span class="sd">            Template: O template do SPADE para esta combinação.</span>
+</span><span id="L-228"><a href="#L-228"><span class="linenos">228</span></a><span class="sd">        """</span>
+</span><span id="L-229"><a href="#L-229"><span class="linenos">229</span></a>        <span class="n">t</span> <span class="o">=</span> <span class="n">Template</span><span class="p">()</span>
+</span><span id="L-230"><a href="#L-230"><span class="linenos">230</span></a>        <span class="n">t</span><span class="o">.</span><span class="n">set_metadata</span><span class="p">(</span><span class="s2">"protocol"</span><span class="p">,</span> <span class="n">protocolo</span><span class="p">)</span>
+</span><span id="L-231"><a href="#L-231"><span class="linenos">231</span></a>        <span class="k">if</span> <span class="n">performativa</span><span class="p">:</span>
+</span><span id="L-232"><a href="#L-232"><span class="linenos">232</span></a>            <span class="n">t</span><span class="o">.</span><span class="n">set_metadata</span><span class="p">(</span><span class="s2">"performative"</span><span class="p">,</span> <span class="n">performativa</span><span class="p">)</span>
+</span><span id="L-233"><a href="#L-233"><span class="linenos">233</span></a>        <span class="k">if</span> <span class="n">thread</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="L-234"><a href="#L-234"><span class="linenos">234</span></a>            <span class="n">t</span><span class="o">.</span><span class="n">thread</span> <span class="o">=</span> <span class="n">thread</span>
+</span><span id="L-235"><a href="#L-235"><span class="linenos">235</span></a>        <span class="k">return</span> <span class="n">t</span>
+</span><span id="L-236"><a href="#L-236"><span class="linenos">236</span></a>
+</span><span id="L-237"><a href="#L-237"><span class="linenos">237</span></a>    <span class="n">resultado</span> <span class="o">=</span> <span class="n">um</span><span class="p">(</span><span class="n">performativas</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">performativas</span> <span class="k">else</span> <span class="kc">None</span><span class="p">)</span>
+</span><span id="L-238"><a href="#L-238"><span class="linenos">238</span></a>    <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">performativas</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+</span><span id="L-239"><a href="#L-239"><span class="linenos">239</span></a>        <span class="n">resultado</span> <span class="o">=</span> <span class="n">resultado</span> <span class="o">|</span> <span class="n">um</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>      <span class="c1"># OU entre templates (ver PDF do SPADE)</span>
+</span><span id="L-240"><a href="#L-240"><span class="linenos">240</span></a>    <span class="k">return</span> <span class="n">resultado</span>
 </span></pre></div>
 
 
@@ -531,7 +539,7 @@ módulo, e os testes, funcionam sem o SPADE instalado.</p>
                     <div class="attr variable">
             <span class="name">PERFORMATIVAS</span>        =
 <input id="PERFORMATIVAS-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
-            <label class="view-value-button pdoc-button" for="PERFORMATIVAS-view-value"></label><span class="default_value">{&#39;reject-proposal&#39;, &#39;request&#39;, &#39;accept-proposal&#39;, &#39;cfp&#39;, &#39;refuse&#39;, &#39;failure&#39;, &#39;inform&#39;, &#39;propose&#39;, &#39;agree&#39;}</span>
+            <label class="view-value-button pdoc-button" for="PERFORMATIVAS-view-value"></label><span class="default_value">{&#39;inform&#39;, &#39;refuse&#39;, &#39;propose&#39;, &#39;agree&#39;, &#39;accept-proposal&#39;, &#39;reject-proposal&#39;, &#39;request&#39;, &#39;cfp&#39;, &#39;failure&#39;}</span>
 
         
     </div>
@@ -640,7 +648,7 @@ módulo, e os testes, funcionam sem o SPADE instalado.</p>
                     <div class="attr variable">
             <span class="name">PROTOCOLOS</span>        =
 <input id="PROTOCOLOS-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
-            <label class="view-value-button pdoc-button" for="PROTOCOLOS-view-value"></label><span class="default_value">{&#39;votacao&#39;, &#39;consultar-ofertas&#39;, &#39;alerta-risco&#39;, &#39;pedir-mitigacao&#39;, &#39;contract-net&#39;, &#39;negociar-descarga&#39;, &#39;gerir-oferta&#39;, &#39;executar-servico&#39;}</span>
+            <label class="view-value-button pdoc-button" for="PROTOCOLOS-view-value"></label><span class="default_value">{&#39;contract-net&#39;, &#39;alerta-risco&#39;, &#39;pedir-mitigacao&#39;, &#39;consultar-ofertas&#39;, &#39;executar-servico&#39;, &#39;votacao&#39;, &#39;negociar-descarga&#39;, &#39;gerir-oferta&#39;}</span>
 
         
     </div>
@@ -1086,19 +1094,27 @@ registo detalhado (-v), em vez de deitar abaixo o behaviour.</p>
 </span><span id="template-218"><a href="#template-218"><span class="linenos">218</span></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">spade.template</span><span class="w"> </span><span class="kn">import</span> <span class="n">Template</span>
 </span><span id="template-219"><a href="#template-219"><span class="linenos">219</span></a>
 </span><span id="template-220"><a href="#template-220"><span class="linenos">220</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">um</span><span class="p">(</span><span class="n">performativa</span><span class="p">):</span>
-</span><span id="template-221"><a href="#template-221"><span class="linenos">221</span></a><span class="w">        </span><span class="sd">"""Template de um só protocolo, com uma performativa e o thread, se houver."""</span>
-</span><span id="template-222"><a href="#template-222"><span class="linenos">222</span></a>        <span class="n">t</span> <span class="o">=</span> <span class="n">Template</span><span class="p">()</span>
-</span><span id="template-223"><a href="#template-223"><span class="linenos">223</span></a>        <span class="n">t</span><span class="o">.</span><span class="n">set_metadata</span><span class="p">(</span><span class="s2">"protocol"</span><span class="p">,</span> <span class="n">protocolo</span><span class="p">)</span>
-</span><span id="template-224"><a href="#template-224"><span class="linenos">224</span></a>        <span class="k">if</span> <span class="n">performativa</span><span class="p">:</span>
-</span><span id="template-225"><a href="#template-225"><span class="linenos">225</span></a>            <span class="n">t</span><span class="o">.</span><span class="n">set_metadata</span><span class="p">(</span><span class="s2">"performative"</span><span class="p">,</span> <span class="n">performativa</span><span class="p">)</span>
-</span><span id="template-226"><a href="#template-226"><span class="linenos">226</span></a>        <span class="k">if</span> <span class="n">thread</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="template-227"><a href="#template-227"><span class="linenos">227</span></a>            <span class="n">t</span><span class="o">.</span><span class="n">thread</span> <span class="o">=</span> <span class="n">thread</span>
-</span><span id="template-228"><a href="#template-228"><span class="linenos">228</span></a>        <span class="k">return</span> <span class="n">t</span>
-</span><span id="template-229"><a href="#template-229"><span class="linenos">229</span></a>
-</span><span id="template-230"><a href="#template-230"><span class="linenos">230</span></a>    <span class="n">resultado</span> <span class="o">=</span> <span class="n">um</span><span class="p">(</span><span class="n">performativas</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">performativas</span> <span class="k">else</span> <span class="kc">None</span><span class="p">)</span>
-</span><span id="template-231"><a href="#template-231"><span class="linenos">231</span></a>    <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">performativas</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
-</span><span id="template-232"><a href="#template-232"><span class="linenos">232</span></a>        <span class="n">resultado</span> <span class="o">=</span> <span class="n">resultado</span> <span class="o">|</span> <span class="n">um</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>      <span class="c1"># OU entre templates (ver PDF do SPADE)</span>
-</span><span id="template-233"><a href="#template-233"><span class="linenos">233</span></a>    <span class="k">return</span> <span class="n">resultado</span>
+</span><span id="template-221"><a href="#template-221"><span class="linenos">221</span></a><span class="w">        </span><span class="sd">"""Template de um só protocolo, com uma performativa e o thread, se houver.</span>
+</span><span id="template-222"><a href="#template-222"><span class="linenos">222</span></a>
+</span><span id="template-223"><a href="#template-223"><span class="linenos">223</span></a><span class="sd">        Args:</span>
+</span><span id="template-224"><a href="#template-224"><span class="linenos">224</span></a><span class="sd">            performativa (str | None): A performativa a exigir, ou None para</span>
+</span><span id="template-225"><a href="#template-225"><span class="linenos">225</span></a><span class="sd">                aceitar qualquer uma.</span>
+</span><span id="template-226"><a href="#template-226"><span class="linenos">226</span></a>
+</span><span id="template-227"><a href="#template-227"><span class="linenos">227</span></a><span class="sd">        Returns:</span>
+</span><span id="template-228"><a href="#template-228"><span class="linenos">228</span></a><span class="sd">            Template: O template do SPADE para esta combinação.</span>
+</span><span id="template-229"><a href="#template-229"><span class="linenos">229</span></a><span class="sd">        """</span>
+</span><span id="template-230"><a href="#template-230"><span class="linenos">230</span></a>        <span class="n">t</span> <span class="o">=</span> <span class="n">Template</span><span class="p">()</span>
+</span><span id="template-231"><a href="#template-231"><span class="linenos">231</span></a>        <span class="n">t</span><span class="o">.</span><span class="n">set_metadata</span><span class="p">(</span><span class="s2">"protocol"</span><span class="p">,</span> <span class="n">protocolo</span><span class="p">)</span>
+</span><span id="template-232"><a href="#template-232"><span class="linenos">232</span></a>        <span class="k">if</span> <span class="n">performativa</span><span class="p">:</span>
+</span><span id="template-233"><a href="#template-233"><span class="linenos">233</span></a>            <span class="n">t</span><span class="o">.</span><span class="n">set_metadata</span><span class="p">(</span><span class="s2">"performative"</span><span class="p">,</span> <span class="n">performativa</span><span class="p">)</span>
+</span><span id="template-234"><a href="#template-234"><span class="linenos">234</span></a>        <span class="k">if</span> <span class="n">thread</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="template-235"><a href="#template-235"><span class="linenos">235</span></a>            <span class="n">t</span><span class="o">.</span><span class="n">thread</span> <span class="o">=</span> <span class="n">thread</span>
+</span><span id="template-236"><a href="#template-236"><span class="linenos">236</span></a>        <span class="k">return</span> <span class="n">t</span>
+</span><span id="template-237"><a href="#template-237"><span class="linenos">237</span></a>
+</span><span id="template-238"><a href="#template-238"><span class="linenos">238</span></a>    <span class="n">resultado</span> <span class="o">=</span> <span class="n">um</span><span class="p">(</span><span class="n">performativas</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">performativas</span> <span class="k">else</span> <span class="kc">None</span><span class="p">)</span>
+</span><span id="template-239"><a href="#template-239"><span class="linenos">239</span></a>    <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">performativas</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+</span><span id="template-240"><a href="#template-240"><span class="linenos">240</span></a>        <span class="n">resultado</span> <span class="o">=</span> <span class="n">resultado</span> <span class="o">|</span> <span class="n">um</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>      <span class="c1"># OU entre templates (ver PDF do SPADE)</span>
+</span><span id="template-241"><a href="#template-241"><span class="linenos">241</span></a>    <span class="k">return</span> <span class="n">resultado</span>
 </span></pre></div>
 
 

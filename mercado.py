@@ -94,19 +94,40 @@ def precisa_contratar(risco, falta):
 
 
 def arredondar(preco):
-    """Arredonda um preço a duas casas (moeda fictícia)."""
+    """Arredonda um preço a duas casas (moeda fictícia).
+
+    Args:
+        preco (float): Preço a arredondar.
+
+    Returns:
+        float: O preço com duas casas decimais.
+    """
     return round(float(preco), 2)
 
 
 # ---- Vendedor (Fornecedor) --------------------------------------------------
 
 def preco_minimo_vendedor(servico):
-    """Menor preço por unidade que o vendedor aceita (70% do preço base)."""
+    """Menor preço por unidade que o vendedor aceita (70% do preço base).
+
+    Args:
+        servico (str): Serviço negociado, como "bombas".
+
+    Returns:
+        float: O preço mínimo por unidade.
+    """
     return arredondar(FRACAO_MINIMA_VENDEDOR * preco_base(servico))
 
 
 def preco_pedido_inicial(servico):
-    """Preço por unidade que o vendedor pede na primeira proposta (o preço base)."""
+    """Preço por unidade que o vendedor pede na primeira proposta (o preço base).
+
+    Args:
+        servico (str): Serviço negociado, como "bombas".
+
+    Returns:
+        float: O preço base por unidade.
+    """
     return arredondar(preco_base(servico))
 
 
@@ -143,7 +164,14 @@ def contraproposta_vendedor(servico, pedido_anterior, oferta):
 # ---- Comprador --------------------------------------------------------------
 
 def oferta_inicial_comprador(servico):
-    """Primeira oferta do comprador: 60% do preço base, por unidade."""
+    """Primeira oferta do comprador: 60% do preço base, por unidade.
+
+    Args:
+        servico (str): Serviço negociado, como "bombas".
+
+    Returns:
+        float: A oferta de abertura por unidade.
+    """
     return arredondar(FRACAO_ABERTURA_COMPRADOR * preco_base(servico))
 
 

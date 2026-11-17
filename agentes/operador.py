@@ -135,12 +135,20 @@ class NeighbourhoodOperator(Agent):
 
     @property
     def nivel_agua(self):
-        """Nível de água do bairro, lido do ambiente (sensor simulado)."""
+        """Nível de água do bairro, lido do ambiente (sensor simulado).
+
+        Returns:
+            float: Água acumulada, em % da capacidade de retenção (0 a 100).
+        """
         return self.ambiente.bairros[self.bairro].nivel
 
     @property
     def velocidade_subida(self):
-        """Quanto o nível subiu no último ciclo do ambiente."""
+        """Quanto o nível subiu no último ciclo do ambiente.
+
+        Returns:
+            float: Variação do nível por ciclo (negativa se a água desce).
+        """
         return self.ambiente.bairros[self.bairro].velocidade
 
     def medir(self):
@@ -190,7 +198,11 @@ class NeighbourhoodOperator(Agent):
 
     @property
     def estado(self):
-        """O bairro no ambiente: nível, estoque, reservas e moeda."""
+        """O bairro no ambiente: nível, estoque, reservas e moeda.
+
+        Returns:
+            ambiente.Bairro: O estado físico do bairro deste operador.
+        """
         return self.ambiente.bairros[self.bairro]
 
     def ativar_mitigacao(self, recursos):
@@ -233,7 +245,16 @@ class NeighbourhoodOperator(Agent):
         ativar, falta = self.estado.separar_pedido(pedido)
 
         def resposta(performativa, tipo, **dados):
-            """Resposta ao líder, no mesmo protocolo e conversa do pedido."""
+            """Resposta ao líder, no mesmo protocolo e conversa do pedido.
+
+            Args:
+                performativa (str): AGREE, REFUSE, INFORM ou FAILURE.
+                tipo (str): Tipo da mensagem, como "mitigacao_aceite".
+                **dados: Campos do corpo da mensagem.
+
+            Returns:
+                Message: A mensagem pronta a enviar ao líder.
+            """
             return mensagens.criar(msg.remetente, performativa,
                                    mensagens.PEDIR_MITIGACAO, tipo,
                                    thread=msg.thread, bairro=self.bairro, **dados)
@@ -275,7 +296,16 @@ class NeighbourhoodOperator(Agent):
         servico, quantidade, destino = c.get("servico"), int(c.get("quantidade", 0)), c.get("destino")
 
         def resposta(performativa, tipo, **dados):
-            """Resposta ao líder, no mesmo protocolo e conversa do pedido."""
+            """Resposta ao líder, no mesmo protocolo e conversa do pedido.
+
+            Args:
+                performativa (str): AGREE, INFORM ou FAILURE.
+                tipo (str): Tipo da mensagem, como "execucao_aceite".
+                **dados: Campos do corpo da mensagem.
+
+            Returns:
+                Message: A mensagem pronta a enviar ao líder.
+            """
             return mensagens.criar(msg.remetente, performativa,
                                    mensagens.EXECUTAR_SERVICO, tipo, thread=msg.thread,
                                    servico=servico, quantidade=quantidade,

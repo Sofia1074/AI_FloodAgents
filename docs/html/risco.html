@@ -39,6 +39,9 @@
                     <a class="function" href="#risco_pelo_nivel">risco_pelo_nivel</a>
             </li>
             <li>
+                    <a class="function" href="#descrever_tendencia">descrever_tendencia</a>
+            </li>
+            <li>
                     <a class="function" href="#classificar_risco">classificar_risco</a>
             </li>
     </ul>
@@ -66,7 +69,9 @@ risco    </h1>
 <li>Uma subida rápida do nível agrava o risco.</li>
 <li>Uma drenagem natural (sem bombas nem equipas) que não chega para a chuva
 atual agrava o risco: a água vai continuar a subir. Só conta a partir de
-NIVEL_MINIMO_DRENAGEM, para um bairro quase seco não ficar em alerta.</li>
+NIVEL_MINIMO_DRENAGEM, para um bairro quase seco não ficar em alerta, e
+não conta se o nível já está a descer (por exemplo, com bombas ativas:
+a previsão de que a água sobe já foi desmentida pela medição).</li>
 <li>Os agravantes somam no máximo AGRAVAMENTO_MAXIMO classes ao nível, para
 um bairro com pouca água não saltar logo para risco elevado.</li>
 </ul>
@@ -84,51 +89,70 @@ um bairro com pouca água não saltar logo para risco elevado.</li>
 </span><span id="L-6"><a href="#L-6"><span class="linenos"> 6</span></a><span class="sd">- Uma subida rápida do nível agrava o risco.</span>
 </span><span id="L-7"><a href="#L-7"><span class="linenos"> 7</span></a><span class="sd">- Uma drenagem natural (sem bombas nem equipas) que não chega para a chuva</span>
 </span><span id="L-8"><a href="#L-8"><span class="linenos"> 8</span></a><span class="sd">  atual agrava o risco: a água vai continuar a subir. Só conta a partir de</span>
-</span><span id="L-9"><a href="#L-9"><span class="linenos"> 9</span></a><span class="sd">  NIVEL_MINIMO_DRENAGEM, para um bairro quase seco não ficar em alerta.</span>
-</span><span id="L-10"><a href="#L-10"><span class="linenos">10</span></a><span class="sd">- Os agravantes somam no máximo AGRAVAMENTO_MAXIMO classes ao nível, para</span>
-</span><span id="L-11"><a href="#L-11"><span class="linenos">11</span></a><span class="sd">  um bairro com pouca água não saltar logo para risco elevado.</span>
-</span><span id="L-12"><a href="#L-12"><span class="linenos">12</span></a><span class="sd">"""</span>
-</span><span id="L-13"><a href="#L-13"><span class="linenos">13</span></a>
-</span><span id="L-14"><a href="#L-14"><span class="linenos">14</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">config</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span><span class="n">AGRAVAMENTO_MAXIMO</span><span class="p">,</span> <span class="n">LIMIAR_SUBIDA_RAPIDA</span><span class="p">,</span> <span class="n">LIMITES_RISCO</span><span class="p">,</span>
-</span><span id="L-15"><a href="#L-15"><span class="linenos">15</span></a>                    <span class="n">NIVEL_MINIMO_DRENAGEM</span><span class="p">)</span>
-</span><span id="L-16"><a href="#L-16"><span class="linenos">16</span></a>
-</span><span id="L-17"><a href="#L-17"><span class="linenos">17</span></a><span class="n">CLASSES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"baixo"</span><span class="p">,</span> <span class="s2">"moderado"</span><span class="p">,</span> <span class="s2">"elevado"</span><span class="p">,</span> <span class="s2">"crítico"</span><span class="p">]</span>
+</span><span id="L-9"><a href="#L-9"><span class="linenos"> 9</span></a><span class="sd">  NIVEL_MINIMO_DRENAGEM, para um bairro quase seco não ficar em alerta, e</span>
+</span><span id="L-10"><a href="#L-10"><span class="linenos">10</span></a><span class="sd">  não conta se o nível já está a descer (por exemplo, com bombas ativas:</span>
+</span><span id="L-11"><a href="#L-11"><span class="linenos">11</span></a><span class="sd">  a previsão de que a água sobe já foi desmentida pela medição).</span>
+</span><span id="L-12"><a href="#L-12"><span class="linenos">12</span></a><span class="sd">- Os agravantes somam no máximo AGRAVAMENTO_MAXIMO classes ao nível, para</span>
+</span><span id="L-13"><a href="#L-13"><span class="linenos">13</span></a><span class="sd">  um bairro com pouca água não saltar logo para risco elevado.</span>
+</span><span id="L-14"><a href="#L-14"><span class="linenos">14</span></a><span class="sd">"""</span>
+</span><span id="L-15"><a href="#L-15"><span class="linenos">15</span></a>
+</span><span id="L-16"><a href="#L-16"><span class="linenos">16</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">config</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span><span class="n">AGRAVAMENTO_MAXIMO</span><span class="p">,</span> <span class="n">LIMIAR_SUBIDA_RAPIDA</span><span class="p">,</span> <span class="n">LIMITES_RISCO</span><span class="p">,</span>
+</span><span id="L-17"><a href="#L-17"><span class="linenos">17</span></a>                    <span class="n">NIVEL_MINIMO_DRENAGEM</span><span class="p">)</span>
 </span><span id="L-18"><a href="#L-18"><span class="linenos">18</span></a>
-</span><span id="L-19"><a href="#L-19"><span class="linenos">19</span></a>
-</span><span id="L-20"><a href="#L-20"><span class="linenos">20</span></a><span class="k">def</span><span class="w"> </span><span class="nf">risco_pelo_nivel</span><span class="p">(</span><span class="n">nivel</span><span class="p">):</span>
-</span><span id="L-21"><a href="#L-21"><span class="linenos">21</span></a><span class="w">    </span><span class="sd">"""Classe de risco só pelo nível da água (0 a 100).</span>
-</span><span id="L-22"><a href="#L-22"><span class="linenos">22</span></a>
-</span><span id="L-23"><a href="#L-23"><span class="linenos">23</span></a><span class="sd">    Args:</span>
-</span><span id="L-24"><a href="#L-24"><span class="linenos">24</span></a><span class="sd">        nivel: nível da água no bairro.</span>
-</span><span id="L-25"><a href="#L-25"><span class="linenos">25</span></a><span class="sd">    Returns:</span>
-</span><span id="L-26"><a href="#L-26"><span class="linenos">26</span></a><span class="sd">        "baixo", "moderado", "elevado" ou "crítico".</span>
-</span><span id="L-27"><a href="#L-27"><span class="linenos">27</span></a><span class="sd">    """</span>
-</span><span id="L-28"><a href="#L-28"><span class="linenos">28</span></a>    <span class="k">for</span> <span class="n">limite</span><span class="p">,</span> <span class="n">classe</span> <span class="ow">in</span> <span class="n">LIMITES_RISCO</span><span class="p">:</span>
-</span><span id="L-29"><a href="#L-29"><span class="linenos">29</span></a>        <span class="k">if</span> <span class="n">nivel</span> <span class="o">&lt;</span> <span class="n">limite</span><span class="p">:</span>
-</span><span id="L-30"><a href="#L-30"><span class="linenos">30</span></a>            <span class="k">return</span> <span class="n">classe</span>
-</span><span id="L-31"><a href="#L-31"><span class="linenos">31</span></a>    <span class="k">return</span> <span class="s2">"crítico"</span>
-</span><span id="L-32"><a href="#L-32"><span class="linenos">32</span></a>
-</span><span id="L-33"><a href="#L-33"><span class="linenos">33</span></a>
-</span><span id="L-34"><a href="#L-34"><span class="linenos">34</span></a><span class="k">def</span><span class="w"> </span><span class="nf">classificar_risco</span><span class="p">(</span><span class="n">nivel</span><span class="p">,</span> <span class="n">velocidade</span><span class="p">,</span> <span class="n">entrada_chuva</span><span class="p">,</span> <span class="n">drenagem</span><span class="p">):</span>
-</span><span id="L-35"><a href="#L-35"><span class="linenos">35</span></a><span class="w">    </span><span class="sd">"""Classe de risco com os agravantes do guia.</span>
-</span><span id="L-36"><a href="#L-36"><span class="linenos">36</span></a>
-</span><span id="L-37"><a href="#L-37"><span class="linenos">37</span></a><span class="sd">    Args:</span>
-</span><span id="L-38"><a href="#L-38"><span class="linenos">38</span></a><span class="sd">        nivel: nível da água no bairro (0 a 100).</span>
-</span><span id="L-39"><a href="#L-39"><span class="linenos">39</span></a><span class="sd">        velocidade: variação do nível no último ciclo (positiva = a subir).</span>
-</span><span id="L-40"><a href="#L-40"><span class="linenos">40</span></a><span class="sd">        entrada_chuva: água que a chuva atual acrescenta por ciclo.</span>
-</span><span id="L-41"><a href="#L-41"><span class="linenos">41</span></a><span class="sd">        drenagem: água que o bairro escoa por ciclo sem ajuda (drenagem natural).</span>
+</span><span id="L-19"><a href="#L-19"><span class="linenos">19</span></a><span class="n">CLASSES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"baixo"</span><span class="p">,</span> <span class="s2">"moderado"</span><span class="p">,</span> <span class="s2">"elevado"</span><span class="p">,</span> <span class="s2">"crítico"</span><span class="p">]</span>
+</span><span id="L-20"><a href="#L-20"><span class="linenos">20</span></a>
+</span><span id="L-21"><a href="#L-21"><span class="linenos">21</span></a>
+</span><span id="L-22"><a href="#L-22"><span class="linenos">22</span></a><span class="k">def</span><span class="w"> </span><span class="nf">risco_pelo_nivel</span><span class="p">(</span><span class="n">nivel</span><span class="p">):</span>
+</span><span id="L-23"><a href="#L-23"><span class="linenos">23</span></a><span class="w">    </span><span class="sd">"""Classe de risco só pelo nível da água (0 a 100).</span>
+</span><span id="L-24"><a href="#L-24"><span class="linenos">24</span></a>
+</span><span id="L-25"><a href="#L-25"><span class="linenos">25</span></a><span class="sd">    Args:</span>
+</span><span id="L-26"><a href="#L-26"><span class="linenos">26</span></a><span class="sd">        nivel: nível da água no bairro.</span>
+</span><span id="L-27"><a href="#L-27"><span class="linenos">27</span></a><span class="sd">    Returns:</span>
+</span><span id="L-28"><a href="#L-28"><span class="linenos">28</span></a><span class="sd">        "baixo", "moderado", "elevado" ou "crítico".</span>
+</span><span id="L-29"><a href="#L-29"><span class="linenos">29</span></a><span class="sd">    """</span>
+</span><span id="L-30"><a href="#L-30"><span class="linenos">30</span></a>    <span class="k">for</span> <span class="n">limite</span><span class="p">,</span> <span class="n">classe</span> <span class="ow">in</span> <span class="n">LIMITES_RISCO</span><span class="p">:</span>
+</span><span id="L-31"><a href="#L-31"><span class="linenos">31</span></a>        <span class="k">if</span> <span class="n">nivel</span> <span class="o">&lt;</span> <span class="n">limite</span><span class="p">:</span>
+</span><span id="L-32"><a href="#L-32"><span class="linenos">32</span></a>            <span class="k">return</span> <span class="n">classe</span>
+</span><span id="L-33"><a href="#L-33"><span class="linenos">33</span></a>    <span class="k">return</span> <span class="s2">"crítico"</span>
+</span><span id="L-34"><a href="#L-34"><span class="linenos">34</span></a>
+</span><span id="L-35"><a href="#L-35"><span class="linenos">35</span></a>
+</span><span id="L-36"><a href="#L-36"><span class="linenos">36</span></a><span class="k">def</span><span class="w"> </span><span class="nf">descrever_tendencia</span><span class="p">(</span><span class="n">velocidade</span><span class="p">):</span>
+</span><span id="L-37"><a href="#L-37"><span class="linenos">37</span></a><span class="w">    </span><span class="sd">"""Diz em palavras se o nível está a subir, a descer ou estável.</span>
+</span><span id="L-38"><a href="#L-38"><span class="linenos">38</span></a>
+</span><span id="L-39"><a href="#L-39"><span class="linenos">39</span></a><span class="sd">    Args:</span>
+</span><span id="L-40"><a href="#L-40"><span class="linenos">40</span></a><span class="sd">        velocidade (float): Variação do nível no último ciclo (positiva = a subir).</span>
+</span><span id="L-41"><a href="#L-41"><span class="linenos">41</span></a>
 </span><span id="L-42"><a href="#L-42"><span class="linenos">42</span></a><span class="sd">    Returns:</span>
-</span><span id="L-43"><a href="#L-43"><span class="linenos">43</span></a><span class="sd">        (classe, motivos): a classe de risco e a lista dos agravantes que</span>
-</span><span id="L-44"><a href="#L-44"><span class="linenos">44</span></a><span class="sd">        a subiram ("subida rápida", "drenagem insuficiente").</span>
-</span><span id="L-45"><a href="#L-45"><span class="linenos">45</span></a><span class="sd">    """</span>
-</span><span id="L-46"><a href="#L-46"><span class="linenos">46</span></a>    <span class="n">motivos</span> <span class="o">=</span> <span class="p">[]</span>
-</span><span id="L-47"><a href="#L-47"><span class="linenos">47</span></a>    <span class="k">if</span> <span class="n">velocidade</span> <span class="o">&gt;=</span> <span class="n">LIMIAR_SUBIDA_RAPIDA</span><span class="p">:</span>
-</span><span id="L-48"><a href="#L-48"><span class="linenos">48</span></a>        <span class="n">motivos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"subida rápida"</span><span class="p">)</span>
-</span><span id="L-49"><a href="#L-49"><span class="linenos">49</span></a>    <span class="k">if</span> <span class="n">nivel</span> <span class="o">&gt;=</span> <span class="n">NIVEL_MINIMO_DRENAGEM</span> <span class="ow">and</span> <span class="n">entrada_chuva</span> <span class="o">&gt;</span> <span class="n">drenagem</span><span class="p">:</span>
-</span><span id="L-50"><a href="#L-50"><span class="linenos">50</span></a>        <span class="n">motivos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"drenagem insuficiente"</span><span class="p">)</span>
-</span><span id="L-51"><a href="#L-51"><span class="linenos">51</span></a>    <span class="n">base</span> <span class="o">=</span> <span class="n">CLASSES</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">risco_pelo_nivel</span><span class="p">(</span><span class="n">nivel</span><span class="p">))</span>
-</span><span id="L-52"><a href="#L-52"><span class="linenos">52</span></a>    <span class="n">final</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">CLASSES</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">base</span> <span class="o">+</span> <span class="nb">min</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">motivos</span><span class="p">),</span> <span class="n">AGRAVAMENTO_MAXIMO</span><span class="p">))</span>
-</span><span id="L-53"><a href="#L-53"><span class="linenos">53</span></a>    <span class="k">return</span> <span class="n">CLASSES</span><span class="p">[</span><span class="n">final</span><span class="p">],</span> <span class="n">motivos</span>
+</span><span id="L-43"><a href="#L-43"><span class="linenos">43</span></a><span class="sd">        str: "a subir 2.4/ciclo", "a descer 0.6/ciclo" ou "estável".</span>
+</span><span id="L-44"><a href="#L-44"><span class="linenos">44</span></a><span class="sd">    """</span>
+</span><span id="L-45"><a href="#L-45"><span class="linenos">45</span></a>    <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">velocidade</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.05</span><span class="p">:</span>
+</span><span id="L-46"><a href="#L-46"><span class="linenos">46</span></a>        <span class="k">return</span> <span class="s2">"estável"</span>
+</span><span id="L-47"><a href="#L-47"><span class="linenos">47</span></a>    <span class="k">if</span> <span class="n">velocidade</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+</span><span id="L-48"><a href="#L-48"><span class="linenos">48</span></a>        <span class="k">return</span> <span class="sa">f</span><span class="s2">"a subir </span><span class="si">{</span><span class="n">velocidade</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">/ciclo"</span>
+</span><span id="L-49"><a href="#L-49"><span class="linenos">49</span></a>    <span class="k">return</span> <span class="sa">f</span><span class="s2">"a descer </span><span class="si">{</span><span class="o">-</span><span class="n">velocidade</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">/ciclo"</span>
+</span><span id="L-50"><a href="#L-50"><span class="linenos">50</span></a>
+</span><span id="L-51"><a href="#L-51"><span class="linenos">51</span></a>
+</span><span id="L-52"><a href="#L-52"><span class="linenos">52</span></a><span class="k">def</span><span class="w"> </span><span class="nf">classificar_risco</span><span class="p">(</span><span class="n">nivel</span><span class="p">,</span> <span class="n">velocidade</span><span class="p">,</span> <span class="n">entrada_chuva</span><span class="p">,</span> <span class="n">drenagem</span><span class="p">):</span>
+</span><span id="L-53"><a href="#L-53"><span class="linenos">53</span></a><span class="w">    </span><span class="sd">"""Classe de risco com os agravantes do guia.</span>
+</span><span id="L-54"><a href="#L-54"><span class="linenos">54</span></a>
+</span><span id="L-55"><a href="#L-55"><span class="linenos">55</span></a><span class="sd">    Args:</span>
+</span><span id="L-56"><a href="#L-56"><span class="linenos">56</span></a><span class="sd">        nivel: nível da água no bairro (0 a 100).</span>
+</span><span id="L-57"><a href="#L-57"><span class="linenos">57</span></a><span class="sd">        velocidade: variação do nível no último ciclo (positiva = a subir).</span>
+</span><span id="L-58"><a href="#L-58"><span class="linenos">58</span></a><span class="sd">            Com o nível a descer (negativa) a drenagem insuficiente não agrava.</span>
+</span><span id="L-59"><a href="#L-59"><span class="linenos">59</span></a><span class="sd">        entrada_chuva: água que a chuva atual acrescenta por ciclo.</span>
+</span><span id="L-60"><a href="#L-60"><span class="linenos">60</span></a><span class="sd">        drenagem: água que o bairro escoa por ciclo sem ajuda (drenagem natural).</span>
+</span><span id="L-61"><a href="#L-61"><span class="linenos">61</span></a><span class="sd">    Returns:</span>
+</span><span id="L-62"><a href="#L-62"><span class="linenos">62</span></a><span class="sd">        (classe, motivos): a classe de risco e a lista dos agravantes que</span>
+</span><span id="L-63"><a href="#L-63"><span class="linenos">63</span></a><span class="sd">        a subiram ("subida rápida", "drenagem insuficiente").</span>
+</span><span id="L-64"><a href="#L-64"><span class="linenos">64</span></a><span class="sd">    """</span>
+</span><span id="L-65"><a href="#L-65"><span class="linenos">65</span></a>    <span class="n">motivos</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="L-66"><a href="#L-66"><span class="linenos">66</span></a>    <span class="k">if</span> <span class="n">velocidade</span> <span class="o">&gt;=</span> <span class="n">LIMIAR_SUBIDA_RAPIDA</span><span class="p">:</span>
+</span><span id="L-67"><a href="#L-67"><span class="linenos">67</span></a>        <span class="n">motivos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"subida rápida"</span><span class="p">)</span>
+</span><span id="L-68"><a href="#L-68"><span class="linenos">68</span></a>    <span class="k">if</span> <span class="n">nivel</span> <span class="o">&gt;=</span> <span class="n">NIVEL_MINIMO_DRENAGEM</span> <span class="ow">and</span> <span class="n">velocidade</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">entrada_chuva</span> <span class="o">&gt;</span> <span class="n">drenagem</span><span class="p">:</span>
+</span><span id="L-69"><a href="#L-69"><span class="linenos">69</span></a>        <span class="n">motivos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"drenagem insuficiente"</span><span class="p">)</span>
+</span><span id="L-70"><a href="#L-70"><span class="linenos">70</span></a>    <span class="n">base</span> <span class="o">=</span> <span class="n">CLASSES</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">risco_pelo_nivel</span><span class="p">(</span><span class="n">nivel</span><span class="p">))</span>
+</span><span id="L-71"><a href="#L-71"><span class="linenos">71</span></a>    <span class="n">final</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">CLASSES</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">base</span> <span class="o">+</span> <span class="nb">min</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">motivos</span><span class="p">),</span> <span class="n">AGRAVAMENTO_MAXIMO</span><span class="p">))</span>
+</span><span id="L-72"><a href="#L-72"><span class="linenos">72</span></a>    <span class="k">return</span> <span class="n">CLASSES</span><span class="p">[</span><span class="n">final</span><span class="p">],</span> <span class="n">motivos</span>
 </span></pre></div>
 
 
@@ -156,18 +180,18 @@ um bairro com pouca água não saltar logo para risco elevado.</li>
 
     </div>
     <a class="headerlink" href="#risco_pelo_nivel"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="risco_pelo_nivel-21"><a href="#risco_pelo_nivel-21"><span class="linenos">21</span></a><span class="k">def</span><span class="w"> </span><span class="nf">risco_pelo_nivel</span><span class="p">(</span><span class="n">nivel</span><span class="p">):</span>
-</span><span id="risco_pelo_nivel-22"><a href="#risco_pelo_nivel-22"><span class="linenos">22</span></a><span class="w">    </span><span class="sd">"""Classe de risco só pelo nível da água (0 a 100).</span>
-</span><span id="risco_pelo_nivel-23"><a href="#risco_pelo_nivel-23"><span class="linenos">23</span></a>
-</span><span id="risco_pelo_nivel-24"><a href="#risco_pelo_nivel-24"><span class="linenos">24</span></a><span class="sd">    Args:</span>
-</span><span id="risco_pelo_nivel-25"><a href="#risco_pelo_nivel-25"><span class="linenos">25</span></a><span class="sd">        nivel: nível da água no bairro.</span>
-</span><span id="risco_pelo_nivel-26"><a href="#risco_pelo_nivel-26"><span class="linenos">26</span></a><span class="sd">    Returns:</span>
-</span><span id="risco_pelo_nivel-27"><a href="#risco_pelo_nivel-27"><span class="linenos">27</span></a><span class="sd">        "baixo", "moderado", "elevado" ou "crítico".</span>
-</span><span id="risco_pelo_nivel-28"><a href="#risco_pelo_nivel-28"><span class="linenos">28</span></a><span class="sd">    """</span>
-</span><span id="risco_pelo_nivel-29"><a href="#risco_pelo_nivel-29"><span class="linenos">29</span></a>    <span class="k">for</span> <span class="n">limite</span><span class="p">,</span> <span class="n">classe</span> <span class="ow">in</span> <span class="n">LIMITES_RISCO</span><span class="p">:</span>
-</span><span id="risco_pelo_nivel-30"><a href="#risco_pelo_nivel-30"><span class="linenos">30</span></a>        <span class="k">if</span> <span class="n">nivel</span> <span class="o">&lt;</span> <span class="n">limite</span><span class="p">:</span>
-</span><span id="risco_pelo_nivel-31"><a href="#risco_pelo_nivel-31"><span class="linenos">31</span></a>            <span class="k">return</span> <span class="n">classe</span>
-</span><span id="risco_pelo_nivel-32"><a href="#risco_pelo_nivel-32"><span class="linenos">32</span></a>    <span class="k">return</span> <span class="s2">"crítico"</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="risco_pelo_nivel-23"><a href="#risco_pelo_nivel-23"><span class="linenos">23</span></a><span class="k">def</span><span class="w"> </span><span class="nf">risco_pelo_nivel</span><span class="p">(</span><span class="n">nivel</span><span class="p">):</span>
+</span><span id="risco_pelo_nivel-24"><a href="#risco_pelo_nivel-24"><span class="linenos">24</span></a><span class="w">    </span><span class="sd">"""Classe de risco só pelo nível da água (0 a 100).</span>
+</span><span id="risco_pelo_nivel-25"><a href="#risco_pelo_nivel-25"><span class="linenos">25</span></a>
+</span><span id="risco_pelo_nivel-26"><a href="#risco_pelo_nivel-26"><span class="linenos">26</span></a><span class="sd">    Args:</span>
+</span><span id="risco_pelo_nivel-27"><a href="#risco_pelo_nivel-27"><span class="linenos">27</span></a><span class="sd">        nivel: nível da água no bairro.</span>
+</span><span id="risco_pelo_nivel-28"><a href="#risco_pelo_nivel-28"><span class="linenos">28</span></a><span class="sd">    Returns:</span>
+</span><span id="risco_pelo_nivel-29"><a href="#risco_pelo_nivel-29"><span class="linenos">29</span></a><span class="sd">        "baixo", "moderado", "elevado" ou "crítico".</span>
+</span><span id="risco_pelo_nivel-30"><a href="#risco_pelo_nivel-30"><span class="linenos">30</span></a><span class="sd">    """</span>
+</span><span id="risco_pelo_nivel-31"><a href="#risco_pelo_nivel-31"><span class="linenos">31</span></a>    <span class="k">for</span> <span class="n">limite</span><span class="p">,</span> <span class="n">classe</span> <span class="ow">in</span> <span class="n">LIMITES_RISCO</span><span class="p">:</span>
+</span><span id="risco_pelo_nivel-32"><a href="#risco_pelo_nivel-32"><span class="linenos">32</span></a>        <span class="k">if</span> <span class="n">nivel</span> <span class="o">&lt;</span> <span class="n">limite</span><span class="p">:</span>
+</span><span id="risco_pelo_nivel-33"><a href="#risco_pelo_nivel-33"><span class="linenos">33</span></a>            <span class="k">return</span> <span class="n">classe</span>
+</span><span id="risco_pelo_nivel-34"><a href="#risco_pelo_nivel-34"><span class="linenos">34</span></a>    <span class="k">return</span> <span class="s2">"crítico"</span>
 </span></pre></div>
 
 
@@ -188,6 +212,51 @@ um bairro com pouca água não saltar logo para risco elevado.</li>
 
 
                 </section>
+                <section id="descrever_tendencia">
+                            <input id="descrever_tendencia-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">descrever_tendencia</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">velocidade</span></span><span class="return-annotation">):</span></span>
+
+                <label class="view-source-button" for="descrever_tendencia-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#descrever_tendencia"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="descrever_tendencia-37"><a href="#descrever_tendencia-37"><span class="linenos">37</span></a><span class="k">def</span><span class="w"> </span><span class="nf">descrever_tendencia</span><span class="p">(</span><span class="n">velocidade</span><span class="p">):</span>
+</span><span id="descrever_tendencia-38"><a href="#descrever_tendencia-38"><span class="linenos">38</span></a><span class="w">    </span><span class="sd">"""Diz em palavras se o nível está a subir, a descer ou estável.</span>
+</span><span id="descrever_tendencia-39"><a href="#descrever_tendencia-39"><span class="linenos">39</span></a>
+</span><span id="descrever_tendencia-40"><a href="#descrever_tendencia-40"><span class="linenos">40</span></a><span class="sd">    Args:</span>
+</span><span id="descrever_tendencia-41"><a href="#descrever_tendencia-41"><span class="linenos">41</span></a><span class="sd">        velocidade (float): Variação do nível no último ciclo (positiva = a subir).</span>
+</span><span id="descrever_tendencia-42"><a href="#descrever_tendencia-42"><span class="linenos">42</span></a>
+</span><span id="descrever_tendencia-43"><a href="#descrever_tendencia-43"><span class="linenos">43</span></a><span class="sd">    Returns:</span>
+</span><span id="descrever_tendencia-44"><a href="#descrever_tendencia-44"><span class="linenos">44</span></a><span class="sd">        str: "a subir 2.4/ciclo", "a descer 0.6/ciclo" ou "estável".</span>
+</span><span id="descrever_tendencia-45"><a href="#descrever_tendencia-45"><span class="linenos">45</span></a><span class="sd">    """</span>
+</span><span id="descrever_tendencia-46"><a href="#descrever_tendencia-46"><span class="linenos">46</span></a>    <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">velocidade</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.05</span><span class="p">:</span>
+</span><span id="descrever_tendencia-47"><a href="#descrever_tendencia-47"><span class="linenos">47</span></a>        <span class="k">return</span> <span class="s2">"estável"</span>
+</span><span id="descrever_tendencia-48"><a href="#descrever_tendencia-48"><span class="linenos">48</span></a>    <span class="k">if</span> <span class="n">velocidade</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+</span><span id="descrever_tendencia-49"><a href="#descrever_tendencia-49"><span class="linenos">49</span></a>        <span class="k">return</span> <span class="sa">f</span><span class="s2">"a subir </span><span class="si">{</span><span class="n">velocidade</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">/ciclo"</span>
+</span><span id="descrever_tendencia-50"><a href="#descrever_tendencia-50"><span class="linenos">50</span></a>    <span class="k">return</span> <span class="sa">f</span><span class="s2">"a descer </span><span class="si">{</span><span class="o">-</span><span class="n">velocidade</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">/ciclo"</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>Diz em palavras se o nível está a subir, a descer ou estável.</p>
+
+<h6 id="arguments">Arguments:</h6>
+
+<ul>
+<li><strong>velocidade (float):</strong>  Variação do nível no último ciclo (positiva = a subir).</li>
+</ul>
+
+<h6 id="returns">Returns:</h6>
+
+<blockquote>
+  <p>str: "a subir 2.4/ciclo", "a descer 0.6/ciclo" ou "estável".</p>
+</blockquote>
+</div>
+
+
+                </section>
                 <section id="classificar_risco">
                             <input id="classificar_risco-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr function">
@@ -199,26 +268,27 @@ um bairro com pouca água não saltar logo para risco elevado.</li>
 
     </div>
     <a class="headerlink" href="#classificar_risco"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="classificar_risco-35"><a href="#classificar_risco-35"><span class="linenos">35</span></a><span class="k">def</span><span class="w"> </span><span class="nf">classificar_risco</span><span class="p">(</span><span class="n">nivel</span><span class="p">,</span> <span class="n">velocidade</span><span class="p">,</span> <span class="n">entrada_chuva</span><span class="p">,</span> <span class="n">drenagem</span><span class="p">):</span>
-</span><span id="classificar_risco-36"><a href="#classificar_risco-36"><span class="linenos">36</span></a><span class="w">    </span><span class="sd">"""Classe de risco com os agravantes do guia.</span>
-</span><span id="classificar_risco-37"><a href="#classificar_risco-37"><span class="linenos">37</span></a>
-</span><span id="classificar_risco-38"><a href="#classificar_risco-38"><span class="linenos">38</span></a><span class="sd">    Args:</span>
-</span><span id="classificar_risco-39"><a href="#classificar_risco-39"><span class="linenos">39</span></a><span class="sd">        nivel: nível da água no bairro (0 a 100).</span>
-</span><span id="classificar_risco-40"><a href="#classificar_risco-40"><span class="linenos">40</span></a><span class="sd">        velocidade: variação do nível no último ciclo (positiva = a subir).</span>
-</span><span id="classificar_risco-41"><a href="#classificar_risco-41"><span class="linenos">41</span></a><span class="sd">        entrada_chuva: água que a chuva atual acrescenta por ciclo.</span>
-</span><span id="classificar_risco-42"><a href="#classificar_risco-42"><span class="linenos">42</span></a><span class="sd">        drenagem: água que o bairro escoa por ciclo sem ajuda (drenagem natural).</span>
-</span><span id="classificar_risco-43"><a href="#classificar_risco-43"><span class="linenos">43</span></a><span class="sd">    Returns:</span>
-</span><span id="classificar_risco-44"><a href="#classificar_risco-44"><span class="linenos">44</span></a><span class="sd">        (classe, motivos): a classe de risco e a lista dos agravantes que</span>
-</span><span id="classificar_risco-45"><a href="#classificar_risco-45"><span class="linenos">45</span></a><span class="sd">        a subiram ("subida rápida", "drenagem insuficiente").</span>
-</span><span id="classificar_risco-46"><a href="#classificar_risco-46"><span class="linenos">46</span></a><span class="sd">    """</span>
-</span><span id="classificar_risco-47"><a href="#classificar_risco-47"><span class="linenos">47</span></a>    <span class="n">motivos</span> <span class="o">=</span> <span class="p">[]</span>
-</span><span id="classificar_risco-48"><a href="#classificar_risco-48"><span class="linenos">48</span></a>    <span class="k">if</span> <span class="n">velocidade</span> <span class="o">&gt;=</span> <span class="n">LIMIAR_SUBIDA_RAPIDA</span><span class="p">:</span>
-</span><span id="classificar_risco-49"><a href="#classificar_risco-49"><span class="linenos">49</span></a>        <span class="n">motivos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"subida rápida"</span><span class="p">)</span>
-</span><span id="classificar_risco-50"><a href="#classificar_risco-50"><span class="linenos">50</span></a>    <span class="k">if</span> <span class="n">nivel</span> <span class="o">&gt;=</span> <span class="n">NIVEL_MINIMO_DRENAGEM</span> <span class="ow">and</span> <span class="n">entrada_chuva</span> <span class="o">&gt;</span> <span class="n">drenagem</span><span class="p">:</span>
-</span><span id="classificar_risco-51"><a href="#classificar_risco-51"><span class="linenos">51</span></a>        <span class="n">motivos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"drenagem insuficiente"</span><span class="p">)</span>
-</span><span id="classificar_risco-52"><a href="#classificar_risco-52"><span class="linenos">52</span></a>    <span class="n">base</span> <span class="o">=</span> <span class="n">CLASSES</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">risco_pelo_nivel</span><span class="p">(</span><span class="n">nivel</span><span class="p">))</span>
-</span><span id="classificar_risco-53"><a href="#classificar_risco-53"><span class="linenos">53</span></a>    <span class="n">final</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">CLASSES</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">base</span> <span class="o">+</span> <span class="nb">min</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">motivos</span><span class="p">),</span> <span class="n">AGRAVAMENTO_MAXIMO</span><span class="p">))</span>
-</span><span id="classificar_risco-54"><a href="#classificar_risco-54"><span class="linenos">54</span></a>    <span class="k">return</span> <span class="n">CLASSES</span><span class="p">[</span><span class="n">final</span><span class="p">],</span> <span class="n">motivos</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="classificar_risco-53"><a href="#classificar_risco-53"><span class="linenos">53</span></a><span class="k">def</span><span class="w"> </span><span class="nf">classificar_risco</span><span class="p">(</span><span class="n">nivel</span><span class="p">,</span> <span class="n">velocidade</span><span class="p">,</span> <span class="n">entrada_chuva</span><span class="p">,</span> <span class="n">drenagem</span><span class="p">):</span>
+</span><span id="classificar_risco-54"><a href="#classificar_risco-54"><span class="linenos">54</span></a><span class="w">    </span><span class="sd">"""Classe de risco com os agravantes do guia.</span>
+</span><span id="classificar_risco-55"><a href="#classificar_risco-55"><span class="linenos">55</span></a>
+</span><span id="classificar_risco-56"><a href="#classificar_risco-56"><span class="linenos">56</span></a><span class="sd">    Args:</span>
+</span><span id="classificar_risco-57"><a href="#classificar_risco-57"><span class="linenos">57</span></a><span class="sd">        nivel: nível da água no bairro (0 a 100).</span>
+</span><span id="classificar_risco-58"><a href="#classificar_risco-58"><span class="linenos">58</span></a><span class="sd">        velocidade: variação do nível no último ciclo (positiva = a subir).</span>
+</span><span id="classificar_risco-59"><a href="#classificar_risco-59"><span class="linenos">59</span></a><span class="sd">            Com o nível a descer (negativa) a drenagem insuficiente não agrava.</span>
+</span><span id="classificar_risco-60"><a href="#classificar_risco-60"><span class="linenos">60</span></a><span class="sd">        entrada_chuva: água que a chuva atual acrescenta por ciclo.</span>
+</span><span id="classificar_risco-61"><a href="#classificar_risco-61"><span class="linenos">61</span></a><span class="sd">        drenagem: água que o bairro escoa por ciclo sem ajuda (drenagem natural).</span>
+</span><span id="classificar_risco-62"><a href="#classificar_risco-62"><span class="linenos">62</span></a><span class="sd">    Returns:</span>
+</span><span id="classificar_risco-63"><a href="#classificar_risco-63"><span class="linenos">63</span></a><span class="sd">        (classe, motivos): a classe de risco e a lista dos agravantes que</span>
+</span><span id="classificar_risco-64"><a href="#classificar_risco-64"><span class="linenos">64</span></a><span class="sd">        a subiram ("subida rápida", "drenagem insuficiente").</span>
+</span><span id="classificar_risco-65"><a href="#classificar_risco-65"><span class="linenos">65</span></a><span class="sd">    """</span>
+</span><span id="classificar_risco-66"><a href="#classificar_risco-66"><span class="linenos">66</span></a>    <span class="n">motivos</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="classificar_risco-67"><a href="#classificar_risco-67"><span class="linenos">67</span></a>    <span class="k">if</span> <span class="n">velocidade</span> <span class="o">&gt;=</span> <span class="n">LIMIAR_SUBIDA_RAPIDA</span><span class="p">:</span>
+</span><span id="classificar_risco-68"><a href="#classificar_risco-68"><span class="linenos">68</span></a>        <span class="n">motivos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"subida rápida"</span><span class="p">)</span>
+</span><span id="classificar_risco-69"><a href="#classificar_risco-69"><span class="linenos">69</span></a>    <span class="k">if</span> <span class="n">nivel</span> <span class="o">&gt;=</span> <span class="n">NIVEL_MINIMO_DRENAGEM</span> <span class="ow">and</span> <span class="n">velocidade</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">entrada_chuva</span> <span class="o">&gt;</span> <span class="n">drenagem</span><span class="p">:</span>
+</span><span id="classificar_risco-70"><a href="#classificar_risco-70"><span class="linenos">70</span></a>        <span class="n">motivos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"drenagem insuficiente"</span><span class="p">)</span>
+</span><span id="classificar_risco-71"><a href="#classificar_risco-71"><span class="linenos">71</span></a>    <span class="n">base</span> <span class="o">=</span> <span class="n">CLASSES</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">risco_pelo_nivel</span><span class="p">(</span><span class="n">nivel</span><span class="p">))</span>
+</span><span id="classificar_risco-72"><a href="#classificar_risco-72"><span class="linenos">72</span></a>    <span class="n">final</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">CLASSES</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">base</span> <span class="o">+</span> <span class="nb">min</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">motivos</span><span class="p">),</span> <span class="n">AGRAVAMENTO_MAXIMO</span><span class="p">))</span>
+</span><span id="classificar_risco-73"><a href="#classificar_risco-73"><span class="linenos">73</span></a>    <span class="k">return</span> <span class="n">CLASSES</span><span class="p">[</span><span class="n">final</span><span class="p">],</span> <span class="n">motivos</span>
 </span></pre></div>
 
 
@@ -228,7 +298,8 @@ um bairro com pouca água não saltar logo para risco elevado.</li>
 
 <ul>
 <li><strong>nivel:</strong>  nível da água no bairro (0 a 100).</li>
-<li><strong>velocidade:</strong>  variação do nível no último ciclo (positiva = a subir).</li>
+<li><strong>velocidade:</strong>  variação do nível no último ciclo (positiva = a subir).
+Com o nível a descer (negativa) a drenagem insuficiente não agrava.</li>
 <li><strong>entrada_chuva:</strong>  água que a chuva atual acrescenta por ciclo.</li>
 <li><strong>drenagem:</strong>  água que o bairro escoa por ciclo sem ajuda (drenagem natural).</li>
 </ul>

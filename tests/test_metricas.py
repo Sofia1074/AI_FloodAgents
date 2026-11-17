@@ -84,9 +84,29 @@ class TestEventos(unittest.TestCase):
         rec.rejeitada_seguranca("caudal acima do máximo seguro")
         r = rec.resumo()["propostas"]
         self.assertEqual(r, {"total": 2, "aprovadas": 1, "rejeitadas_votacao": 1,
-                             "rejeitadas_seguranca": 1, "descargas": 1})
+                             "rejeitadas_seguranca": 1, "descargas": 1,
+                             "contingencias": 0})
         self.assertEqual(len(rec.resumo()["tempo_ate_decisao_s"]), 2)
         self.assertTrue(all(t >= 0 for t in rec.resumo()["tempo_ate_decisao_s"]))
+
+    def test_contingencia_conta_como_descarga_e_nao_como_proposta(self):
+        rec, _ = recolha("conflito")
+        rec.contingencia(60.0, "emergência")
+        rec.descarga(60.0, 20)
+        r = rec.resumo()["propostas"]
+        self.assertEqual(r["contingencias"], 1)
+        self.assertEqual(r["descargas"], 1)
+        self.assertEqual(r["total"], 0)
+
+    def test_tempo_ate_a_decisao_tem_resolucao_inferior_a_um_tick_do_windows(self):
+        """Duas chamadas seguidas já não dão 0 ms (o monotonic do Windows
+        só avança de 15,6 em 15,6 ms)."""
+        rec, _ = recolha("conflito")
+        for _ in range(200):
+            rec.proposta(40.0)
+            rec.decisao(aprovado=True, favoraveis=2, total=3)
+        tempos = rec.resumo()["tempo_ate_decisao_s"]
+        self.assertTrue(any(0 < t < 0.015 for t in tempos))
 
     def test_recursos_usados_por_bairro_e_total(self):
         rec, _ = recolha()

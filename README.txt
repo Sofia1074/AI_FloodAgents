@@ -94,7 +94,7 @@ mostra o estado final e as métricas, e grava-as em resultados/<cenário>/
 
 5. OUTROS COMANDOS
 
-    python -m unittest discover -s tests       testes automáticos (135)
+    python -m unittest discover -s tests       testes automáticos (143)
 
     python gerar_docs.py                       documentação do código em HTML
                                                (docs/html/index.html), a partir

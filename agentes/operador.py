@@ -8,7 +8,7 @@ import metricas
 import registo
 from config import CAPACIDADE_TANQUE, PASSWORD, PERIODO_MEDICAO, jid
 from rede import REDE
-from risco import classificar_risco
+from risco import classificar_risco, descrever_tendencia
 
 
 class NeighbourhoodOperator(Agent):
@@ -72,8 +72,8 @@ class NeighbourhoodOperator(Agent):
             op.ultimo_risco_enviado = op.risco
             metricas.alerta(op.bairro, op.risco)
             motivos = f", {', '.join(op.motivos)}" if op.motivos else ""
-            dados = (f"(nível {op.nivel_agua:.1f}, a subir "
-                     f"{op.velocidade_subida:+.1f}/ciclo{motivos})")
+            dados = (f"(nível {op.nivel_agua:.1f}, "
+                     f"{descrever_tendencia(op.velocidade_subida)}{motivos})")
             if anterior is None and op.risco == "baixo" and not op.motivos:
                 registo.detalhe(op.nome, "primeira leitura: risco baixo")
             elif anterior is None:

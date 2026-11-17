@@ -6,7 +6,9 @@ O operador do bairro usa estas regras (secção 3 do guia):
 - Uma subida rápida do nível agrava o risco.
 - Uma drenagem natural (sem bombas nem equipas) que não chega para a chuva
   atual agrava o risco: a água vai continuar a subir. Só conta a partir de
-  NIVEL_MINIMO_DRENAGEM, para um bairro quase seco não ficar em alerta.
+  NIVEL_MINIMO_DRENAGEM, para um bairro quase seco não ficar em alerta, e
+  não conta se o nível já está a descer (por exemplo, com bombas ativas:
+  a previsão de que a água sobe já foi desmentida pela medição).
 - Os agravantes somam no máximo AGRAVAMENTO_MAXIMO classes ao nível, para
   um bairro com pouca água não saltar logo para risco elevado.
 """
@@ -31,12 +33,29 @@ def risco_pelo_nivel(nivel):
     return "crítico"
 
 
+def descrever_tendencia(velocidade):
+    """Diz em palavras se o nível está a subir, a descer ou estável.
+
+    Args:
+        velocidade (float): Variação do nível no último ciclo (positiva = a subir).
+
+    Returns:
+        str: "a subir 2.4/ciclo", "a descer 0.6/ciclo" ou "estável".
+    """
+    if abs(velocidade) < 0.05:
+        return "estável"
+    if velocidade > 0:
+        return f"a subir {velocidade:.1f}/ciclo"
+    return f"a descer {-velocidade:.1f}/ciclo"
+
+
 def classificar_risco(nivel, velocidade, entrada_chuva, drenagem):
     """Classe de risco com os agravantes do guia.
 
     Args:
         nivel: nível da água no bairro (0 a 100).
         velocidade: variação do nível no último ciclo (positiva = a subir).
+            Com o nível a descer (negativa) a drenagem insuficiente não agrava.
         entrada_chuva: água que a chuva atual acrescenta por ciclo.
         drenagem: água que o bairro escoa por ciclo sem ajuda (drenagem natural).
     Returns:
@@ -46,7 +65,7 @@ def classificar_risco(nivel, velocidade, entrada_chuva, drenagem):
     motivos = []
     if velocidade >= LIMIAR_SUBIDA_RAPIDA:
         motivos.append("subida rápida")
-    if nivel >= NIVEL_MINIMO_DRENAGEM and entrada_chuva > drenagem:
+    if nivel >= NIVEL_MINIMO_DRENAGEM and velocidade >= 0 and entrada_chuva > drenagem:
         motivos.append("drenagem insuficiente")
     base = CLASSES.index(risco_pelo_nivel(nivel))
     final = min(len(CLASSES) - 1, base + min(len(motivos), AGRAVAMENTO_MAXIMO))

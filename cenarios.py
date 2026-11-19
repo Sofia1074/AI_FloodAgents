@@ -78,7 +78,7 @@ CENARIOS = {
         "chuva": [4] * 8 + [1] * 2,
         "bairros": {
             "A": _bairro("A", nivel=10.0),
-            "B": _bairro("B", nivel=50.0, humidade=0.7, moeda=80.0,
+            "B": _bairro("B", nivel=50.0, humidade=0.7,
                          estoque={"bombas": 0, "sacos_areia": 0, "barreiras": 1, "equipas": 1}),
             "C": _bairro("C", nivel=5.0),
         },

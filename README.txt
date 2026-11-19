@@ -142,8 +142,6 @@ Os experimentos correm o mesmo cenário mudando um parâmetro de cada vez
 
 7. NOTAS
 
-  - A moeda e os preços são fictícios, e o modelo da água é uma aproximação
-    simples. O sistema é só uma simulação académica e não serve para
-    controlar uma barragem real.
   - O servidor XMPP embutido cria ficheiros server.db* na pasta. Podem ser
     apagados.
+  
